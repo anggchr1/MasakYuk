@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import '../models/know.dart';
 import '../models/recipe.dart';
+import '../models/social.dart';
 
 /// Sumber data sementara: assets/sample_recipes.json (24 resep).
 /// NANTI (M2): ganti _loadLocal dengan query Firestore:
@@ -11,6 +13,12 @@ class RecipeRepository extends ChangeNotifier {
   final List<Recipe> _system = [];
   final List<Recipe> _custom = [];
   final Set<String> _favorites = {};
+  final List<Map<String, dynamic>> _prices = [];
+  final List<IngredientInfo> encyclopedia = [];
+  final List<PlaceInfo> places = [];
+  final Map<String, List<CommentItem>> _comments = {};
+  final Map<String, Map<String, int>> _ratings = {};
+  final List<NotifItem> notifs = [];
   bool loaded = false;
 
   // Akun mock — NANTI: FirebaseAuth.currentUser (M2)
@@ -33,10 +41,180 @@ class RecipeRepository extends ChangeNotifier {
 
   Future<void> load() async {
     if (loaded) return;
-    final raw = await rootBundle.loadString('assets/sample_recipes.json');
-    final list = (json.decode(raw) as List).cast<Map<String, dynamic>>();
+    Future<List> loadJson(String p) async =>
+        (json.decode(await rootBundle.loadString(p)) as List);
+    final list =
+        (await loadJson('assets/sample_recipes.json')).cast<Map<String, dynamic>>();
     _system.addAll(list.map(Recipe.fromJson));
+    final pr =
+        (await loadJson('assets/prices.json')).cast<Map<String, dynamic>>();
+    _prices.addAll(pr);
+    final en = (await loadJson('assets/encyclopedia.json'))
+        .cast<Map<String, dynamic>>();
+    encyclopedia.addAll(en.map(IngredientInfo.fromJson));
+    final pl =
+        (await loadJson('assets/places.json')).cast<Map<String, dynamic>>();
+    places.addAll(pl.map(PlaceInfo.fromJson));
+    notifs.addAll([
+      NotifItem(
+        id: 'n0',
+        kind: 'sistem',
+        title: 'Selamat datang di MasakYuk!',
+        desc: 'Cari resep dari bahan kulkasmu, lalu simpan favoritmu.',
+        at: DateTime.now().subtract(const Duration(hours: 5)),
+      ),
+      NotifItem(
+        id: 'n1',
+        kind: 'sistem',
+        title: 'Tips Dapur Nusantara',
+        desc: 'Simpan bumbu marinasi minimal 20 menit agar lebih meresap.',
+        at: DateTime.now().subtract(const Duration(days: 1)),
+        read: true,
+      ),
+    ]);
     loaded = true;
+    notifyListeners();
+  }
+
+  // ---------- Budget: jumlahkan harga bahan yang cocok ----------
+  ({int min, int max, bool complete}) estCost(Recipe r) {
+    if (r.estCostManual != null) {
+      final v = r.estCostManual!;
+      return (
+        min: (v * 0.75).round(),
+        max: (v * 1.25).round(),
+        complete: true
+      );
+    }
+    final keys = r.ingredientsKeywords.toSet();
+    var sum = 0;
+    var hit = 0;
+    for (final p in _prices) {
+      final need = (p['k'] as String).split(' ');
+      if (need.every(keys.contains)) {
+        sum += (p['rp'] as num).toInt();
+        hit++;
+      }
+    }
+    if (hit < 3) return (min: 0, max: 0, complete: false);
+    return (
+      min: (sum * 0.75).round(),
+      max: (sum * 1.25).round(),
+      complete: true
+    );
+  }
+
+  /// Resep dalam range ±25% budget, termurah dulu, tak lengkap di belakang.
+  List<Recipe> budgetSearch(int budget) {
+    final lo = (budget * 0.75).round();
+    final hi = (budget * 1.25).round();
+    final ok = <Recipe>[];
+    final partial = <Recipe>[];
+    for (final r in _pool) {
+      final e = estCost(r);
+      if (!e.complete) {
+        partial.add(r);
+        continue;
+      }
+      if (e.min <= hi && e.max >= lo) ok.add(r);
+    }
+    ok.sort((a, b) =>
+        estCost(a).min.compareTo(estCost(b).min));
+    return [...ok, ...partial];
+  }
+
+  /// Rincian bahan berbiaya (untuk kartu budget).
+  List<MapEntry<String, int>> priceBreakdown(Recipe r) {
+    final keys = r.ingredientsKeywords.toSet();
+    final out = <MapEntry<String, int>>[];
+    for (final p in _prices) {
+      final need = (p['k'] as String).split(' ');
+      if (need.every(keys.contains)) {
+        out.add(MapEntry(
+            p['nama'] as String, (p['rp'] as num).toInt()));
+      }
+    }
+    return out;
+  }
+
+  Recipe? findById(String id) {
+    for (final r in [..._system, ..._custom]) {
+      if (r.docId == id) return r;
+    }
+    return null;
+  }
+
+  List<Recipe> searchTitle(String q) {
+    final s = q.toLowerCase();
+    if (s.isEmpty) return [];
+    return _pool.where((r) => r.title.toLowerCase().contains(s)).toList();
+  }
+
+  // ---------- Komentar & rating (1 user 1 rating aktif) ----------
+  List<CommentItem> commentsFor(String docId) =>
+      List.unmodifiable(_comments[docId] ?? []);
+
+  void addComment(String docId, String text) {
+    final list = _comments.putIfAbsent(docId, () => []);
+    list.add(CommentItem(
+        user: userName, text: text, at: DateTime.now()));
+    notifyListeners();
+  }
+
+  void setRating(String docId, int stars, String title) {
+    final m = _ratings.putIfAbsent(docId, () => {});
+    m[userName] = stars.clamp(1, 5);
+    pushNotif(
+      kind: 'rating',
+      title: 'Bintang $stars untuk "$title"',
+      desc: 'Terima kasih atas penilaianmu!',
+      recipeId: docId,
+    );
+    notifyListeners();
+  }
+
+  double avgRating(String docId) {
+    final m = _ratings[docId];
+    if (m == null || m.isEmpty) return 0;
+    return m.values.reduce((a, b) => a + b) / m.length;
+  }
+
+  int ratingCount(String docId) => _ratings[docId]?.length ?? 0;
+  int myRating(String docId) => _ratings[docId]?[userName] ?? 0;
+
+  // ---------- Notifikasi in-app ----------
+  int get unreadCount => notifs.where((n) => !n.read).length;
+
+  void pushNotif({
+    required String kind,
+    required String title,
+    required String desc,
+    String? recipeId,
+  }) {
+    notifs.insert(
+        0,
+        NotifItem(
+          id: 'n${DateTime.now().millisecondsSinceEpoch}',
+          kind: kind,
+          title: title,
+          desc: desc,
+          at: DateTime.now(),
+          recipeId: recipeId,
+        ));
+    notifyListeners();
+  }
+
+  void markRead(String id) {
+    for (final n in notifs) {
+      if (n.id == id) n.read = true;
+    }
+    notifyListeners();
+  }
+
+  void markAllRead() {
+    for (final n in notifs) {
+      n.read = true;
+    }
     notifyListeners();
   }
 
@@ -75,6 +253,7 @@ class RecipeRepository extends ChangeNotifier {
     String? durationText,
     String? difficulty,
     String? servings,
+    int? estCostManual,
   }) {
     final kws = ingredients
         .join(' ')
@@ -96,7 +275,7 @@ class RecipeRepository extends ChangeNotifier {
       proteins: null,
       fat: null,
       carbohydrate: null,
-      hasNutrition: false, // NANTI: estimasi Gemini saat dibuka (M3)
+      hasNutrition: false, // dormant, tanpa AI (keputusan v2.1)
       nutritionSource: 'missing',
       loves: 0,
       origin: 'custom',
@@ -106,7 +285,15 @@ class RecipeRepository extends ChangeNotifier {
       durationText: durationText,
       difficulty: difficulty,
       servings: servings,
+      estCostManual: estCostManual,
     ));
+    pushNotif(
+      kind: 'sistem',
+      title: publish ? 'Resep Diterbitkan!' : 'Draf tersimpan',
+      desc: publish
+          ? 'Karyamu kini bisa ditemukan pengguna lain.'
+          : 'Lanjutkan lagi kapan pun dari Resep Saya.',
+    );
     notifyListeners();
   }
 

@@ -55,7 +55,17 @@ class BottomNav extends StatelessWidget {
                             : AppColors.chocolate
                                 .withValues(alpha: 0.4),
                       ),
-                      const SizedBox(height: 2),
+                      Text(
+                        e.value.$2,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: active
+                              ? AppColors.primary
+                              : AppColors.chocolate
+                                  .withValues(alpha: 0.4),
+                        ),
+                      ),
                       Container(
                         width: 6,
                         height: 6,

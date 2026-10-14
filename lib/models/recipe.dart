@@ -13,7 +13,7 @@ class Recipe {
   final double? fat;
   final double? carbohydrate;
   final bool hasNutrition;
-  final String nutritionSource; // 'dataset' | 'missing' (missing = estimasi AI)
+  final String nutritionSource; // dormant, tak tampil di UI (keputusan v2.1)
   final int loves;
   final String origin; // 'system' | 'custom'
   final bool isPublished;
@@ -23,6 +23,7 @@ class Recipe {
   final String? durationText; // cth "35 mnt"
   final String? difficulty; // Mudah | Sedang | Sulit
   final String? servings; // cth "3-4 Porsi"
+  final int? estCostManual; // input user (Rp total), null = hitung tabel
 
   const Recipe({
     required this.docId,
@@ -46,6 +47,7 @@ class Recipe {
     this.durationText,
     this.difficulty,
     this.servings,
+    this.estCostManual,
   });
 
   static List<String> _strList(dynamic v) =>
@@ -79,6 +81,7 @@ class Recipe {
       durationText: j['durationText'] as String?,
       difficulty: j['difficulty'] as String?,
       servings: j['servings'] as String?,
+      estCostManual: (j['estCostManual'] as num?)?.toInt(),
     );
   }
 

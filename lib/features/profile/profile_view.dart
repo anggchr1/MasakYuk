@@ -7,6 +7,7 @@ import '../../data/recipe_photo.dart';
 import '../../data/recipe_repository.dart';
 import '../../models/recipe.dart';
 import '../detail/detail_view.dart';
+import '../notifications/notifications_view.dart';
 
 /// Profil ala Stitch: header lengkung + avatar + stats + tab
 /// Resep Saya/Disimpan (kelola: terbitkan/tarik/hapus) + bantuan + logout.
@@ -394,6 +395,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: ListTile(
               leading: const CircleAvatar(
                 backgroundColor: AppColors.sand,
+                child: Icon(Icons.notifications_outlined,
+                    color: AppColors.primary),
+              ),
+              title: const Text('Notifikasi',
+                  style:
+                      TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: Text(
+                  widget.repo.unreadCount > 0
+                      ? '${widget.repo.unreadCount} belum dibaca'
+                      : 'Semua sudah dibaca'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => NotificationsScreen(
+                        repo: widget.repo)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: AppColors.sand,
                 child: Icon(Icons.help_center,
                     color: AppColors.primary),
               ),
@@ -409,7 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: const Text('Bantuan MasakYuk'),
                   content: const Text(
                     '1. Ketik bahan di Home untuk cari resep.\n'
-                    '2. Badge "Estimasi AI" = gizi perkiraan, bukan hasil lab.\n'
+                    '2. Label "estimasi sebagian" = ada bahan tanpa data harga.\n'
                     '3. Resep Draf hanya milikmu; Terbitkan agar orang lain bisa menemukan.\n'
                     '4. Resep seed berasal dari dataset terbuka.',
                   ),

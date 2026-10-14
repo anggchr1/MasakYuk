@@ -6,6 +6,7 @@ class AppColors {
   static const primary = Color(0xFF9F3C16); // terracotta tua (CTA)
   static const primaryContainer = Color(0xFFBF542C);
   static const amber = Color(0xFFE28743); // rating / aksen
+  static const secondary = Color(0xFF944A05); // aksen tua (pita harga)
   static const cream = Color(0xFFFFF8F0); // background
   static const sand = Color(0xFFF3EBE1); // kartu / input
   static const chocolate = Color(0xFF3D2314); // teks

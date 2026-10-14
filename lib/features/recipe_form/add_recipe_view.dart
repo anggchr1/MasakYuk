@@ -5,7 +5,7 @@ import '../../data/food_photos.dart';
 import '../../data/recipe_repository.dart';
 
 /// Tulis resep ala Stitch: preview foto otomatis + nama + cerita +
-/// waktu/porsi/sulit + kategori + gizi AI + bahan + langkah + terbit.
+/// waktu/porsi/sulit + kategori + bahan + langkah + terbit. (Tanpa gizi/AI.)
 /// Upload foto manual = M7 (placeholder kategori, tanpa Storage).
 class AddRecipeScreen extends StatefulWidget {
   final RecipeRepository repo;
@@ -18,6 +18,7 @@ class AddRecipeScreen extends StatefulWidget {
 class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final _title = TextEditingController();
   final _desc = TextEditingController();
+  final _price = TextEditingController();
   String _category = 'Unggas';
   String _duration = '30 mnt';
   String _serving = '2-3 Porsi';
@@ -162,50 +163,15 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
             }).toList(),
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.sand,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.auto_awesome,
-                        color: AppColors.primary, size: 20),
-                    SizedBox(width: 8),
-                    Text('Hitung Nutrisi AI Gemini',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700)),
-                    Spacer(),
-                    Chip(label: Text('Estimasi AI')),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Nilai gizi dihitung otomatis saat resep dibuka (butuh internet + API key, aktif M3).',
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.chocolateMuted),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () =>
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                                content: Text(
-                                    'Hitung AI aktif di M3 — butuh API key Gemini.'))),
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text(
-                        'Perbarui Hitungan Gizi (AI)'),
-                  ),
-                ),
-              ],
-            ),
+          const Text('Estimasi Total Belanja (Rp, opsional)',
+              style: TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _price,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+                hintText:
+                    'cth: 25000 (kosongkan bila tidak tahu)'),
           ),
           const SizedBox(height: 16),
           _dynamicSection('Bahan Masakan (min 3)', _ings),
@@ -326,6 +292,8 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       durationText: _duration,
       difficulty: _difficulty,
       servings: _serving,
+      estCostManual: int.tryParse(
+          _price.text.replaceAll(RegExp(r'[^0-9]'), '')),
     );
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -340,6 +308,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   void dispose() {
     _title.dispose();
     _desc.dispose();
+    _price.dispose();
     for (final c in [..._ings, ..._steps]) {
       c.dispose();
     }

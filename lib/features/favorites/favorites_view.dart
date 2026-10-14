@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_feedback.dart';
 import '../../core/widgets/recipe_card.dart';
+import '../notifications/notifications_view.dart';
 import '../../data/recipe_repository.dart';
 import '../../models/recipe.dart';
 import '../detail/detail_view.dart';
@@ -24,7 +25,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   static const _sorts = [
     'Terbaru',
     'Nama A-Z',
-    'Kalori Terendah',
+    'Waktu Tersingkat',
     'Populer'
   ];
 
@@ -47,10 +48,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         switch (_sort) {
           case 'Nama A-Z':
             items.sort((a, b) => a.title.compareTo(b.title));
-          case 'Kalori Terendah':
-            items.sort((a, b) =>
-                (a.calories ?? double.infinity)
-                    .compareTo(b.calories ?? double.infinity));
+          case 'Waktu Tersingkat':
+            items.sort((a, b) => a.stepsList.length
+                .compareTo(b.stepsList.length));
           case 'Populer':
             items.sort((a, b) => b.loves.compareTo(a.loves));
           default:
@@ -194,6 +194,44 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   ],
                 ),
               ),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Colors.white
+                        .withValues(alpha: 0.2),
+                    child: IconButton(
+                      icon: const Icon(
+                          Icons.notifications_outlined),
+                      color: Colors.white,
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                                NotificationsScreen(
+                                    repo: widget.repo)),
+                      ),
+                    ),
+                  ),
+                  if (widget.repo.unreadCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: CircleAvatar(
+                        radius: 9,
+                        backgroundColor: AppColors.amber,
+                        child: Text(
+                          '${widget.repo.unreadCount}',
+                          style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 8),
               CircleAvatar(
                 backgroundColor:
                     Colors.white.withValues(alpha: 0.2),

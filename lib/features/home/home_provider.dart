@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../../data/recipe_repository.dart';
 import '../../models/recipe.dart';
 
-/// State layar Home: chip filter + query + buka "lihat lainnya".
+/// State Home v2: search nama + checklist bahan + chip + budget.
 /// NANTI: tambah debounce sebelum query Firestore (hemat reads).
 class HomeProvider extends ChangeNotifier {
   final RecipeRepository repo;
@@ -10,6 +10,8 @@ class HomeProvider extends ChangeNotifier {
 
   String chip = 'Semua';
   String query = '';
+  String titleQuery = '';
+  final Set<String> picked = {};
   bool showAll = false;
 
   static const chips = [
@@ -24,6 +26,17 @@ class HomeProvider extends ChangeNotifier {
     'telur'
   ];
 
+  static const bahanChips = [
+    'telur',
+    'ayam',
+    'cabai',
+    'bawang',
+    'tahu',
+    'tempe',
+    'tomat',
+    'santan',
+  ];
+
   void setChip(String c) {
     chip = c;
     showAll = false;
@@ -36,22 +49,45 @@ class HomeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setTitle(String q) {
+    titleQuery = q;
+    showAll = false;
+    notifyListeners();
+  }
+
+  void togglePick(String b) {
+    if (!picked.remove(b)) picked.add(b);
+    showAll = false;
+    notifyListeners();
+  }
+
   void revealAll() {
     showAll = true;
     notifyListeners();
   }
 
-  Set<String> get inputs => query
-      .toLowerCase()
-      .split(RegExp(r'[^a-z]+'))
-      .where((w) => w.length >= 3)
-      .toSet();
+  /// Gabungan kata ketik + chip terpilih.
+  Set<String> get inputs => {
+        ...query
+            .toLowerCase()
+            .split(RegExp(r'[^a-z]+'))
+            .where((w) => w.length >= 3),
+        ...picked,
+      };
 
-  ({List<Recipe> top3, List<Recipe> rest}) get results =>
-      chip == 'Semua'
-          ? repo.search(inputs)
-          : (
-              top3: repo.byTag(chip).take(3).toList(),
-              rest: repo.byTag(chip).skip(3).take(17).toList(),
-            );
+  bool get searching =>
+      inputs.isNotEmpty ||
+      titleQuery.trim().isNotEmpty ||
+      chip != 'Semua' ||
+      showAll;
+
+  ({List<Recipe> top3, List<Recipe> rest}) get results {
+    if (titleQuery.trim().isNotEmpty) {
+      final all = repo.searchTitle(titleQuery.trim());
+      return (top3: all.take(3).toList(), rest: all.skip(3).take(17).toList());
+    }
+    if (chip == 'Semua') return repo.search(inputs);
+    final t = repo.byTag(chip);
+    return (top3: t.take(3).toList(), rest: t.skip(3).take(17).toList());
+  }
 }

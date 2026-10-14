@@ -15,7 +15,7 @@ class _SplashScreenState extends State<SplashScreen> {
   static const _texts = [
     'Menyiapkan bumbu dapur...',
     'Memanaskan wajan...',
-    'Menghitung gizi resep...',
+    'Menyiapkan rekomendasi resep...',
   ];
   int _i = 0;
   Timer? _t;
@@ -132,7 +132,7 @@ class _SplashScreenState extends State<SplashScreen> {
                         backgroundColor:
                             AppColors.primary),
                     SizedBox(width: 6),
-                    Text('Versi 1.0.0 • Ditenagai AI Gemini',
+                    Text('Versi 1.0.0 • 1500+ Resep Nusantara',
                         style: TextStyle(fontSize: 11)),
                   ],
                 ),
