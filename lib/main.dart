@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:timeago/timeago.dart' as timeago;
 import 'core/theme/app_theme.dart';
 import 'core/widgets/bottom_nav.dart';
 import 'data/recipe_repository.dart';
 import 'features/auth/auth_provider.dart';
 import 'features/auth/login_view.dart';
+import 'features/cook/cook_view.dart';
 import 'features/splash/splash_view.dart';
-import 'features/detail/detail_view.dart';
 import 'features/favorites/favorites_view.dart';
 import 'features/home/home_view.dart';
 import 'features/profile/profile_view.dart';
-import 'features/recipe_form/add_recipe_view.dart';
-import 'models/recipe.dart';
 
 void main() {
+  timeago.setLocaleMessages('id', timeago.IdMessages());
   runApp(const MasakYukApp());
 }
 
@@ -94,7 +94,7 @@ class _HomeShellState extends State<HomeShell> {
               key: ValueKey(_homeSalt),
               repo: widget.repo,
             ),
-            _cookTab(),
+            CookScreen(repo: widget.repo),
             FavoritesScreen(repo: widget.repo),
             ProfileScreen(
                 repo: widget.repo, onLogout: widget.onLogout),
@@ -112,43 +112,5 @@ class _HomeShellState extends State<HomeShell> {
         },
       ),
     );
-  }
-
-  /// Tab "Masak": resep terakhir difavoritkan → langsung ke Detail.
-  /// Kosong = ajak tulis resep. (Tambah resep juga via FAB di Favorit.)
-  Widget _cookTab() {
-    final favs = widget.repo.favorites;
-    if (favs.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.soup_kitchen,
-                  size: 64, color: AppColors.primary),
-              const SizedBox(height: 12),
-              const Text(
-                'Belum ada resep dibuka.\nCari bahan di Home atau tulis resep sendiri.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) =>
-                          AddRecipeScreen(repo: widget.repo)),
-                ),
-                icon: const Icon(Icons.add),
-                label: const Text('Tulis Resep'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    final Recipe last = favs.last;
-    return DetailScreen(repo: widget.repo, recipe: last);
   }
 }

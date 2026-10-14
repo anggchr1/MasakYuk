@@ -40,6 +40,9 @@ dependencies:
   url_launcher: ^6.3.3
   path_provider: ^2.1.6
   timeago: ^3.7.1
+  flutter_svg: ^2.0.0
+  geolocator: ^14.1.1
+  geocoding: ^5.0.0
 
 dev_dependencies:
   flutter_test:
@@ -68,6 +71,8 @@ flutter:
     - assets/encyclopedia.json
     - assets/prices.json
     - assets/places.json
+    - assets/images/login_hero.jpg
+    - assets/images/google_g.svg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -1,1 +1,224 @@
-[{"id":"pasar-tanjung","nama":"Pasar Tradisional Surya Kencana","jenis":"Pasar Basah & Bumbu","alamat":"Jl. Raya, Jember","lat":-8.1712,"lng":113.7023,"harga":"Rp5.000 - Rp45.000","harga_note":"harga grosir","rating":4.8,"ulasan":320,"desc":"Pusat bumbu dapur segar, rempah giling, dan sayur mayur petik langsung.","contoh":true},{"id":"warung-bu-siti","nama":"Warung Sayur & Sembako Bu Siti","jenis":"Warung Rumahan","alamat":"Jl. Mawar, Jember","lat":-8.1652,"lng":113.7118,"harga":"Rp2.000 - Rp25.000","harga_note":"estimasi pasar","rating":4.9,"ulasan":145,"desc":"Paketan sayur siap masak, bumbu racik halus, dan persediaan telur curah kiloan.","contoh":true},{"id":"kios-tahu-tempe","nama":"Kios Tahu Tempe Sumber Barokah","jenis":"Produsen Lokal","alamat":"Jl. Melati, Jember","lat":-8.1788,"lng":113.6941,"harga":"Rp4.000 - Rp12.000","harga_note":"harga produsen","rating":4.9,"ulasan":88,"desc":"Pusat olahan kedelai lokal bebas pengawet, dibuat fresh setiap subuh.","contoh":true},{"id":"kedai-bebek","nama":"Kedai Nasi Bebek Madura Cak Malik","jenis":"Kuliner Tradisional","alamat":"Jl. Sudirman, Jember","lat":-8.1593,"lng":113.7227,"harga":"±Rp22.000 / porsi","harga_note":"estimasi","rating":4.7,"ulasan":510,"desc":"Bumbu hitam khas rempah Madura asli, sambal mangga muda pedas mantap.","contoh":true},{"id":"toko-sembako","nama":"Toko Sembako Berkah Jaya","jenis":"Warung Bahan","alamat":"Jl. Kenanga, Jember","lat":-8.1745,"lng":113.7089,"harga":"Rp3.000 - Rp30.000","harga_note":"estimasi pasar","rating":4.6,"ulasan":203,"desc":"Beras, minyak, telur, dan bumbu dapur lengkap buka setiap hari.","contoh":true},{"id":"pasar-pagi","nama":"Pasar Pagi Krajan","jenis":"Pasar Basah & Bumbu","alamat":"Krajan, Jember","lat":-8.1831,"lng":113.7156,"harga":"Rp2.000 - Rp20.000","harga_note":"harga grosir","rating":4.5,"ulasan":97,"desc":"Sayur mayur segar langsung dari petani, paling ramai sebelum jam 7 pagi.","contoh":true}]
+[
+ {
+  "id": "pasar-tanjung",
+  "nama": "Pasar Tradisional Surya Kencana",
+  "jenis": "Pasar Basah & Bumbu",
+  "alamat": "Jl. Raya, Jember",
+  "lat": -8.1712,
+  "lng": 113.7023,
+  "harga": "Rp5.000 - Rp45.000",
+  "harga_note": "harga grosir",
+  "rating": 4.8,
+  "ulasan": 320,
+  "desc": "Pusat bumbu dapur segar, rempah giling, dan sayur mayur petik langsung.",
+  "contoh": true,
+  "jam": "05:00 - 12:00 WIB, setiap hari",
+  "unggulan": [
+   {
+    "nama": "Kunyit & Jahe Segar",
+    "desc": "Rimpang basah pilihan petani lokal",
+    "harga": "±Rp4.000 /250gr"
+   },
+   {
+    "nama": "Bumbu Kuning & Merah Ulek",
+    "desc": "Giling murni tanpa pengawet",
+    "harga": "±Rp5.000 /bungkus"
+   },
+   {
+    "nama": "Tempe & Tahu Daun",
+    "desc": "Fermentasi alami wangi",
+    "harga": "±Rp6.000 /papan"
+   },
+   {
+    "nama": "Kelapa Parut & Santan",
+    "desc": "Peras murni kental di tempat",
+    "harga": "±Rp8.000 /butir"
+   }
+  ]
+ },
+ {
+  "id": "warung-bu-siti",
+  "nama": "Warung Sayur & Sembako Bu Siti",
+  "jenis": "Warung Rumahan",
+  "alamat": "Jl. Mawar, Jember",
+  "lat": -8.1652,
+  "lng": 113.7118,
+  "harga": "Rp2.000 - Rp25.000",
+  "harga_note": "estimasi pasar",
+  "rating": 4.9,
+  "ulasan": 145,
+  "desc": "Paketan sayur siap masak, bumbu racik halus, dan persediaan telur curah kiloan.",
+  "contoh": true,
+  "jam": "06:00 - 21:00 WIB, setiap hari",
+  "unggulan": [
+   {
+    "nama": "Sayur Paketan Harian",
+    "desc": "Paket sayur + bumbu siap masak",
+    "harga": "±Rp10.000 /paket"
+   },
+   {
+    "nama": "Telur Curah Kiloan",
+    "desc": "Telur ayam negeri segar",
+    "harga": "±Rp28.000 /kg"
+   },
+   {
+    "nama": "Bumbu Racik Halus",
+    "desc": "Bumbu merah/putih siap pakai",
+    "harga": "±Rp5.000 /bungkus"
+   },
+   {
+    "nama": "Tempe Mendoan Mentah",
+    "desc": "Tempe daun lebar tipis",
+    "harga": "±Rp7.000 /papan"
+   }
+  ]
+ },
+ {
+  "id": "kios-tahu-tempe",
+  "nama": "Kios Tahu Tempe Sumber Barokah",
+  "jenis": "Produsen Lokal",
+  "alamat": "Jl. Melati, Jember",
+  "lat": -8.1788,
+  "lng": 113.6941,
+  "harga": "Rp4.000 - Rp12.000",
+  "harga_note": "harga produsen",
+  "rating": 4.9,
+  "ulasan": 88,
+  "desc": "Pusat olahan kedelai lokal bebas pengawet, dibuat fresh setiap subuh.",
+  "contoh": true,
+  "jam": "05:30 - 15:00 WIB, setiap hari",
+  "unggulan": [
+   {
+    "nama": "Tahu Putih Segar",
+    "desc": "Padat gurih, 4 buah",
+    "harga": "±Rp5.000 /bungkus"
+   },
+   {
+    "nama": "Tempe Daun Pisang",
+    "desc": "Fermentasi sempurna",
+    "harga": "±Rp6.000 /papan"
+   },
+   {
+    "nama": "Susu Kedelai Murni",
+    "desc": "Tanpa pengawet, manis pas",
+    "harga": "±Rp5.000 /botol"
+   },
+   {
+    "nama": "Keripik Tempe",
+    "desc": "Renyah gurih untuk camilan",
+    "harga": "±Rp10.000 /bungkus"
+   }
+  ]
+ },
+ {
+  "id": "kedai-bebek",
+  "nama": "Kedai Nasi Bebek Madura Cak Malik",
+  "jenis": "Kuliner Tradisional",
+  "alamat": "Jl. Sudirman, Jember",
+  "lat": -8.1593,
+  "lng": 113.7227,
+  "harga": "±Rp22.000 / porsi",
+  "harga_note": "estimasi",
+  "rating": 4.7,
+  "ulasan": 510,
+  "desc": "Bumbu hitam khas rempah Madura asli, sambal mangga muda pedas mantap.",
+  "contoh": true,
+  "jam": "10:00 - 21:00 WIB, setiap hari",
+  "unggulan": [
+   {
+    "nama": "Nasi Bebek Madura",
+    "desc": "Bumbu hitam + sambal mangga",
+    "harga": "±Rp22.000 /porsi"
+   },
+   {
+    "nama": "Ayam Goreng Kampung",
+    "desc": "Ungkep rempah 8 jam",
+    "harga": "±Rp20.000 /porsi"
+   },
+   {
+    "nama": "Es Teh Manis Jumbo",
+    "desc": "Teh melati gula batu",
+    "harga": "±Rp5.000 /gelas"
+   },
+   {
+    "nama": "Sambal Mangga Extra",
+    "desc": "Pedas segar tambahan",
+    "harga": "±Rp3.000 /porsi"
+   }
+  ]
+ },
+ {
+  "id": "toko-sembako",
+  "nama": "Toko Sembako Berkah Jaya",
+  "jenis": "Warung Bahan",
+  "alamat": "Jl. Kenanga, Jember",
+  "lat": -8.1745,
+  "lng": 113.7089,
+  "harga": "Rp3.000 - Rp30.000",
+  "harga_note": "estimasi pasar",
+  "rating": 4.6,
+  "ulasan": 203,
+  "desc": "Beras, minyak, telur, dan bumbu dapur lengkap buka setiap hari.",
+  "contoh": true,
+  "jam": "07:00 - 20:00 WIB, setiap hari",
+  "unggulan": [
+   {
+    "nama": "Beras Medium 5kg",
+    "desc": "Pulen bersih siap tanak",
+    "harga": "±Rp70.000 /karung"
+   },
+   {
+    "nama": "Minyak Goreng 2L",
+    "desc": "Sawit premium jernih",
+    "harga": "±Rp42.000 /jeriken"
+   },
+   {
+    "nama": "Gula Pasir 1kg",
+    "desc": "Kristal putih bersih",
+    "harga": "±Rp17.000 /kg"
+   },
+   {
+    "nama": "Telur Ayam 1kg",
+    "desc": "Sortir segar harian",
+    "harga": "±Rp28.000 /kg"
+   }
+  ]
+ },
+ {
+  "id": "pasar-pagi",
+  "nama": "Pasar Pagi Krajan",
+  "jenis": "Pasar Basah & Bumbu",
+  "alamat": "Krajan, Jember",
+  "lat": -8.1831,
+  "lng": 113.7156,
+  "harga": "Rp2.000 - Rp20.000",
+  "harga_note": "harga grosir",
+  "rating": 4.5,
+  "ulasan": 97,
+  "desc": "Sayur mayur segar langsung dari petani, paling ramai sebelum jam 7 pagi.",
+  "contoh": true,
+  "jam": "04:30 - 09:00 WIB, setiap hari",
+  "unggulan": [
+   {
+    "nama": "Sayur Asem Paketan",
+    "desc": "Isi komplit siap rebus",
+    "harga": "±Rp8.000 /paket"
+   },
+   {
+    "nama": "Ikan Segar Pagi",
+    "desc": "Tangkapan malam tadi",
+    "harga": "±Rp15.000 /500gr"
+   },
+   {
+    "nama": "Cabai Campur Segar",
+    "desc": "Merah, rawit, hijau",
+    "harga": "±Rp10.000 /250gr"
+   },
+   {
+    "nama": "Kelapa Parut Pagi",
+    "desc": "Parut kasar untuk urap",
+    "harga": "±Rp6.000 /butir"
+   }
+  ]
+ }
+]

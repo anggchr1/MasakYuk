@@ -24,6 +24,7 @@ class Recipe {
   final String? difficulty; // Mudah | Sedang | Sulit
   final String? servings; // cth "3-4 Porsi"
   final int? estCostManual; // input user (Rp total), null = hitung tabel
+  final DateTime? createdAt; // resep custom (untuk purge draf lama)
 
   const Recipe({
     required this.docId,
@@ -48,6 +49,7 @@ class Recipe {
     this.difficulty,
     this.servings,
     this.estCostManual,
+    this.createdAt,
   });
 
   static List<String> _strList(dynamic v) =>
@@ -82,6 +84,9 @@ class Recipe {
       difficulty: j['difficulty'] as String?,
       servings: j['servings'] as String?,
       estCostManual: (j['estCostManual'] as num?)?.toInt(),
+      createdAt: j['createdAt'] == null
+          ? null
+          : DateTime.tryParse(j['createdAt'] as String),
     );
   }
 

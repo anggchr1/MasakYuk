@@ -238,6 +238,35 @@ class RecipeRepository extends ChangeNotifier {
   List<Recipe> byTag(String tag) =>
       _pool.where((r) => r.tags.contains(tag)).toList();
 
+  /// Filter chip kategori ala desain v2 (nama tampilan → data).
+  List<Recipe> byDisplayCategory(String c) {
+    switch (c) {
+      case 'Sarapan':
+        return byTag('sarapan');
+      case 'Cepat & Mudah':
+        return byTag('cepat');
+      case 'Pedas':
+        return byTag('pedas');
+      case 'Ayam & Daging':
+        return _pool
+            .where((r) =>
+                r.category == 'Unggas' ||
+                r.category == 'Daging')
+            .toList();
+      case 'Seafood':
+        return _pool
+            .where((r) => r.category == 'Seafood')
+            .toList();
+      case 'Sayuran':
+        return _pool
+            .where((r) => r.category == 'Nabati')
+            .toList();
+      case 'Nusantara':
+      default:
+        return List.of(_pool);
+    }
+  }
+
   void toggleFavorite(String docId) {
     if (!_favorites.remove(docId)) _favorites.add(docId);
     notifyListeners();
@@ -298,6 +327,77 @@ class RecipeRepository extends ChangeNotifier {
   }
 
   /// Kelola resep sendiri (Profil → Koleksi Terbitan).
+  /// Ubah resep sendiri (dari menu Kelola). Keyword dihitung ulang.
+  void updateCustom(
+    String docId, {
+    required String title,
+    required String category,
+    required List<String> ingredients,
+    required List<String> steps,
+    required bool publish,
+    String description = '',
+    String? durationText,
+    String? difficulty,
+    String? servings,
+    int? estCostManual,
+  }) {
+    final i = _custom.indexWhere((r) => r.docId == docId);
+    if (i < 0) return;
+    final old = _custom[i];
+    final kws = ingredients
+        .join(' ')
+        .toLowerCase()
+        .split(RegExp(r'[^a-z]+'))
+        .where((w) => w.length >= 3)
+        .toSet()
+        .take(20)
+        .toList();
+    _custom[i] = Recipe(
+      docId: old.docId,
+      title: title,
+      category: category,
+      tags: [category.toLowerCase()],
+      ingredientsRaw: ingredients,
+      ingredientsKeywords: kws,
+      stepsList: steps,
+      calories: null,
+      proteins: null,
+      fat: null,
+      carbohydrate: null,
+      hasNutrition: false,
+      nutritionSource: 'missing',
+      loves: old.loves,
+      origin: 'custom',
+      isPublished: publish,
+      ownerId: 'local',
+      description: description,
+      durationText: durationText,
+      difficulty: difficulty,
+      servings: servings,
+      estCostManual: estCostManual,
+      createdAt: old.createdAt ?? DateTime.now(),
+    );
+    notifyListeners();
+  }
+
+  /// Hapus draf lebih tua dari [days] hari. Kembalikan jumlah terhapus.
+  int purgeOldDrafts(int days) {
+    final cut =
+        DateTime.now().subtract(Duration(days: days));
+    final doomed = _custom
+        .where((r) =>
+            !r.isPublished &&
+            r.createdAt != null &&
+            r.createdAt!.isBefore(cut))
+        .toList();
+    for (final r in doomed) {
+      _custom.remove(r);
+      _favorites.remove(r.docId);
+    }
+    if (doomed.isNotEmpty) notifyListeners();
+    return doomed.length;
+  }
+
   void deleteCustom(String docId) {
     _custom.removeWhere((r) => r.docId == docId);
     _favorites.remove(docId);

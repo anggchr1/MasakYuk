@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:timeago/timeago.dart' as timeago;
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_feedback.dart';
 import '../../core/widgets/app_image.dart';
@@ -31,6 +32,7 @@ class _DetailScreenState extends State<DetailScreen> {
   late final DetailProvider _dp;
   final _shot = ScreenshotController();
   final _cmt = TextEditingController();
+  bool _bahanOpen = true;
 
   @override
   void initState() {
@@ -46,9 +48,31 @@ class _DetailScreenState extends State<DetailScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 280,
+            expandedHeight: 320,
             pinned: true,
             backgroundColor: AppColors.primary,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(40),
+                bottomRight: Radius.circular(40),
+              ),
+            ),
+            centerTitle: true,
+            title: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color:
+                    Colors.white.withValues(alpha: 0.9),
+                borderRadius:
+                    BorderRadius.circular(9999),
+              ),
+              child: const Text('Resep',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.chocolate)),
+            ),
             leading: Padding(
               padding: const EdgeInsets.all(8),
               child: CircleAvatar(
@@ -61,6 +85,23 @@ class _DetailScreenState extends State<DetailScreen> {
               ),
             ),
             actions: [
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: CircleAvatar(
+                  backgroundColor: Colors.white,
+                  child: IconButton(
+                    icon: const Icon(Icons.share,
+                        color: AppColors.chocolate),
+                    onPressed: () =>
+                        SharePlus.instance.share(
+                      ShareParams(
+                        text:
+                            '${r.title}\n\nBahan:\n${r.ingredientsRaw.join('\n')}\n\n— via MasakYuk',
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.all(8),
                 child: CircleAvatar(
@@ -128,28 +169,23 @@ class _DetailScreenState extends State<DetailScreen> {
                     children: [
                       Text(r.title,
                           style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: 26,
                               fontWeight: FontWeight.w800,
+                              letterSpacing: -0.65,
                               color: AppColors.chocolate)),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
                         r.description.isEmpty
                             ? r.category
                             : r.description,
                         style: const TextStyle(
+                            fontSize: 14,
                             color:
                                 AppColors.chocolateMuted),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          _pill(Icons.timer_outlined, 'WAKTU',
-                              r.displayDuration),
-                          const SizedBox(width: 12),
-                          _pill(Icons.bar_chart, 'KESULITAN',
-                              r.displayDifficulty),
-                        ],
-                      ),
+                      _metaBar(r.displayDuration,
+                          r.displayDifficulty),
                       const SizedBox(height: 12),
                       _priceBox(e.min, e.max, e.complete),
                       const SizedBox(height: 10),
@@ -158,16 +194,28 @@ class _DetailScreenState extends State<DetailScreen> {
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: _export,
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                side: BorderSide(
+                                    color:
+                                        const Color(0xFFDEC0B7)
+                                            .withValues(
+                                                alpha: 0.7)),
+                                shape:
+                                    const StadiumBorder(),
+                              ),
                               icon: const Icon(
                                   Icons.image_outlined,
                                   size: 18),
                               label: const Text(
-                                  'Export Gambar',
+                                  'Export Gambar Resep',
+                                  textAlign:
+                                      TextAlign.center,
                                   style: TextStyle(
                                       fontSize: 12)),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: () =>
@@ -179,11 +227,23 @@ class _DetailScreenState extends State<DetailScreen> {
                                             repo:
                                                 widget.repo)),
                               ),
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                side: BorderSide(
+                                    color:
+                                        const Color(0xFFDEC0B7)
+                                            .withValues(
+                                                alpha: 0.7)),
+                                shape:
+                                    const StadiumBorder(),
+                              ),
                               icon: const Icon(
                                   Icons.store_outlined,
                                   size: 18),
                               label: const Text(
-                                  'Bahan di Maps',
+                                  'Buka Bahan di Maps',
+                                  textAlign:
+                                      TextAlign.center,
                                   style: TextStyle(
                                       fontSize: 12)),
                             ),
@@ -206,84 +266,90 @@ class _DetailScreenState extends State<DetailScreen> {
                                 TextStyle(fontSize: 12)),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        'Ingredient (${r.ingredientsRaw.length} bahan)',
-                        style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.chocolate),
-                      ),
-                      const SizedBox(height: 8),
-                      Screenshot(
-                        controller: _shot,
-                        child: Container(
-                          color: AppColors.cream,
-                          padding:
-                              const EdgeInsets.symmetric(
-                                  vertical: 4),
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Text(r.title,
-                                  style: const TextStyle(
-                                      fontWeight:
-                                          FontWeight.w800,
-                                      fontSize: 16)),
-                              ...r.ingredientsRaw.map(
-                                (ing) => Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(
-                                          vertical: 3),
-                                  child: Row(
-                                    children: [
-                                      const Text('• ',
-                                          style: TextStyle(
-                                              color: AppColors
-                                                  .primary,
-                                              fontWeight:
-                                                  FontWeight
-                                                      .w800)),
-                                      Expanded(
-                                          child:
-                                              Text(ing)),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const Text(
-                                  '— via MasakYuk',
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors
-                                          .chocolateMuted)),
-                            ],
+                      Row(
+                        children: [
+                          const Text('Bahan',
+                              style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight:
+                                      FontWeight.w700,
+                                  color:
+                                      AppColors.chocolate)),
+                          const SizedBox(width: 8),
+                          Text(
+                            '(${r.ingredientsRaw.length} bahan)',
+                            style: const TextStyle(
+                                fontSize: 14,
+                                color: AppColors
+                                    .chocolateMuted),
                           ),
-                        ),
-                      ),
-                      ...r.ingredientsRaw.asMap().entries.map(
-                            (e2) => CheckboxListTile(
-                              value: _dp.checked
-                                  .contains(e2.key),
-                              onChanged: (_) =>
-                                  _dp.toggle(e2.key),
-                              title: Text(
-                                e2.value,
-                                style: TextStyle(
-                                  decoration: _dp.checked
-                                          .contains(e2.key)
-                                      ? TextDecoration
-                                          .lineThrough
-                                      : null,
-                                ),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () => setState(() =>
+                                _bahanOpen = !_bahanOpen),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: AppColors.sand,
+                                borderRadius:
+                                    BorderRadius.circular(
+                                        9999),
                               ),
-                              controlAffinity:
-                                  ListTileControlAffinity
-                                      .leading,
-                              contentPadding:
-                                  EdgeInsets.zero,
+                              child: Icon(
+                                  _bahanOpen
+                                      ? Icons
+                                          .keyboard_arrow_up
+                                      : Icons
+                                          .keyboard_arrow_down,
+                                  size: 18,
+                                  color: AppColors
+                                      .chocolateMuted),
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (_bahanOpen)
+                        Screenshot(
+                          controller: _shot,
+                          child: Container(
+                            padding:
+                                const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.sand,
+                              borderRadius:
+                                  BorderRadius.circular(
+                                      32),
+                            ),
+                            child: Column(
+                              children: [
+                                ...r.ingredientsRaw
+                                    .asMap()
+                                    .entries
+                                    .map(
+                                  (e2) {
+                                    final checked = _dp
+                                        .checked
+                                        .contains(e2.key);
+                                    return Padding(
+                                      padding:
+                                          const EdgeInsets
+                                              .only(
+                                                  bottom:
+                                                      10),
+                                      child: _bahanRow(
+                                          e2.value,
+                                          checked,
+                                          () => _dp.toggle(
+                                              e2.key)),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 12),
                       _comments(),
                       const SizedBox(height: 90),
@@ -310,7 +376,7 @@ class _DetailScreenState extends State<DetailScreen> {
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 52,
+            height: 56,
             child: ElevatedButton.icon(
               onPressed: () => Navigator.push(
                 context,
@@ -329,34 +395,62 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
-  Widget _pill(IconData icon, String label, String value) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.sand,
-          borderRadius: BorderRadius.circular(20),
-        ),
+  /// Bar WAKTU + KESULITAN ala Figma: pil sand berisi dua grup + divider.
+  Widget _metaBar(String waktu, String sulit) {
+    Widget group(IconData icon, String label, String value) {
+      return Expanded(
         child: Row(
           children: [
-            Icon(icon,
-                size: 22, color: AppColors.primary),
-            const SizedBox(width: 8),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon,
+                  size: 15, color: AppColors.primary),
+            ),
+            const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
                     style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.chocolateMuted)),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.55,
+                        color:
+                            AppColors.chocolateMuted)),
                 Text(value,
                     style: const TextStyle(
-                        fontWeight: FontWeight.w700)),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.chocolate)),
               ],
             ),
           ],
         ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.sand,
+        borderRadius: BorderRadius.circular(9999),
+      ),
+      child: Row(
+        children: [
+          group(Icons.timer_outlined, 'WAKTU', waktu),
+          Container(
+            width: 1,
+            height: 32,
+            color: const Color(0xFFDEC0B7)
+                .withValues(alpha: 0.6),
+          ),
+          group(Icons.bar_chart, 'KESULITAN', sulit),
+        ],
       ),
     );
   }
@@ -365,55 +459,137 @@ class _DetailScreenState extends State<DetailScreen> {
     final String badge;
     final String desc;
     if (complete) {
-      badge = '${Money.range(min, max)} estimasi';
-      desc = 'Dihitung dari harga pasar. Realisasi bisa berbeda.';
+      badge = '${Money.range(min, max)} • estimasi';
+      desc =
+          'Harga dihitung dari harga rata-rata bahan di pasar tradisional dan warung terdekat. Realisasi pengeluaran dapat bervariasi sesuai musim.';
     } else {
       badge = 'estimasi sebagian';
       desc = 'Sebagian bahan belum ada data harga.';
     }
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
         color: AppColors.sand,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+            color: const Color(0xFFDEC0B7)
+                .withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.payments_outlined,
                 color: AppColors.primary,
               ),
-              SizedBox(width: 8),
-              Text('Perkiraan Belanja'),
-              Spacer(),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Perkiraan Belanja',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.chocolate)),
+              ),
               Container(
-                padding: EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.secondary,
                   borderRadius: BorderRadius.circular(9999),
                 ),
                 child: Text(
                   badge,
-                  style: TextStyle(
+                  style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: FontWeight.w700),
                 ),
               ),
             ],
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             desc,
-            style: TextStyle(
+            style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.chocolateMuted),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Baris bahan ala Figma: pil putih + checkbox 22px + badge "Siap".
+  Widget _bahanRow(
+      String text, bool checked, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(9999),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: checked
+                    ? AppColors.primary
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: checked
+                    ? null
+                    : Border.all(
+                        color:
+                            AppColors.chocolateMuted),
+              ),
+              child: checked
+                  ? const Icon(Icons.check,
+                      size: 16, color: Colors.white)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: checked
+                      ? FontWeight.w400
+                      : FontWeight.w500,
+                  color: checked
+                      ? AppColors.chocolateMuted
+                      : AppColors.chocolate,
+                  decoration: checked
+                      ? TextDecoration.lineThrough
+                      : null,
+                ),
+              ),
+            ),
+            if (checked)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFE2D5),
+                  borderRadius:
+                      BorderRadius.circular(9999),
+                ),
+                child: const Text('Siap',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: AppColors.primary)),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -427,80 +603,157 @@ class _DetailScreenState extends State<DetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Text('Ulasan Dapur',
-                style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.chocolate)),
-            const Spacer(),
-            if (cnt > 0)
-              Text(
-                  '★ ${avg.toStringAsFixed(1)} ($cnt ulasan)',
-                  style: const TextStyle(
+          Row(
+            children: [
+              const Text('Ulasan Dapur',
+                  style: TextStyle(
+                      fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.primary)),
-          ],
+                      color: AppColors.chocolate)),
+              const Spacer(),
+              Text(
+                  cnt > 0
+                      ? '${avg.toStringAsFixed(1)} ($cnt ulasan)'
+                      : 'Belum ada rating',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.chocolateMuted)),
+            ],
+          ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.sand,
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text('Beri Bintang Resep:',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.chocolate)),
+                  const Spacer(),
+                  ...List.generate(
+                      5,
+                      (i) => IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints:
+                                const BoxConstraints(),
+                            icon: Icon(
+                              i < mine
+                                  ? Icons.star
+                                  : Icons.star_border,
+                              color: AppColors.amber,
+                            ),
+                            onPressed: () {
+                              widget.repo.setRating(
+                                  r.docId, i + 1, r.title);
+                              AppToast.show(
+                                context,
+                                'Bintang ${i + 1} tersimpan!',
+                                'Terima kasih atas penilaianmu.',
+                                icon: Icons.star,
+                              );
+                            },
+                          )),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.only(top: 13),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                        color: const Color(0xFFDEC0B7)
+                            .withValues(alpha: 0.5)),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    if (list.isEmpty)
+                      const Text(
+                          'Belum ada ulasan. Jadilah yang pertama!',
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors
+                                  .chocolateMuted)),
+                    ...list.take(1).map((c) => Container(
+                          padding:
+                              const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius:
+                                BorderRadius.circular(
+                                    16),
+                          ),
+                          child: Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 14,
+                                    backgroundColor:
+                                        AppColors.secondary,
+                                    child: Text(
+                                        c.user.isEmpty
+                                            ? '?'
+                                            : c.user[0]
+                                                .toUpperCase(),
+                                        style:
+                                            const TextStyle(
+                                                color: Colors
+                                                    .white,
+                                                fontSize: 12,
+                                                fontWeight:
+                                                    FontWeight
+                                                        .w700)),
+                                  ),
+                                  const SizedBox(
+                                      width: 8),
+                                  Expanded(
+                                    child: Text(c.user,
+                                        style:
+                                            const TextStyle(
+                                                fontWeight:
+                                                    FontWeight
+                                                        .w700,
+                                                fontSize:
+                                                    13)),
+                                  ),
+                                  Text(
+                                    timeago.format(c.at,
+                                        locale: 'id'),
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors
+                                            .chocolateMuted),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(c.text,
+                                  style: const TextStyle(
+                                      fontSize: 13)),
+                            ],
+                          ),
+                        )),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            const Text('Beri Bintang: ',
-                style: TextStyle(fontSize: 13)),
-            ...List.generate(
-                5,
-                (i) => IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: Icon(
-                        i < mine
-                            ? Icons.star
-                            : Icons.star_border,
-                        color: AppColors.amber,
-                      ),
-                      onPressed: () {
-                        widget.repo.setRating(
-                            r.docId, i + 1, r.title);
-                        AppToast.show(
-                          context,
-                          'Bintang ${i + 1} tersimpan!',
-                          'Terima kasih atas penilaianmu.',
-                          icon: Icons.star,
-                        );
-                      },
-                    )),
-          ],
-        ),
-        const SizedBox(height: 4),
-        if (list.isEmpty)
-          const Text(
-              'Belum ada ulasan. Jadilah yang pertama!',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.chocolateMuted)),
-        ...list.map((c) => Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: AppColors.sand,
-                  child: Text(
-                      c.user.isEmpty
-                          ? '?'
-                          : c.user[0].toUpperCase(),
-                      style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w800)),
-                ),
-                title: Text(c.user,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13)),
-                subtitle: Text(c.text,
-                    style:
-                        const TextStyle(fontSize: 13)),
-              ),
-            )),
         const SizedBox(height: 8),
         Row(
           children: [

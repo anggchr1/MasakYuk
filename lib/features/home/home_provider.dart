@@ -1,9 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../../data/recipe_repository.dart';
-import '../../models/recipe.dart';
 
-/// State Home v2: search nama + checklist bahan + chip + budget.
-/// NANTI: tambah debounce sebelum query Firestore (hemat reads).
+/// State Home v2: chip bahan (toggle manual) + query + chip kategori.
+/// TIDAK auto-search: hasil dibuka lewat layar Hasil (pill / submit / chip).
 class HomeProvider extends ChangeNotifier {
   final RecipeRepository repo;
   HomeProvider(this.repo);
@@ -12,18 +11,17 @@ class HomeProvider extends ChangeNotifier {
   String query = '';
   String titleQuery = '';
   final Set<String> picked = {};
-  bool showAll = false;
+  bool applied = false;
 
   static const chips = [
     'Semua',
-    'pedas',
-    'cepat',
-    'sarapan',
-    'unggas',
-    'daging',
-    'seafood',
-    'nabati',
-    'telur'
+    'Sarapan',
+    'Cepat & Mudah',
+    'Pedas',
+    'Nusantara',
+    'Ayam & Daging',
+    'Seafood',
+    'Sayuran',
   ];
 
   static const bahanChips = [
@@ -39,34 +37,32 @@ class HomeProvider extends ChangeNotifier {
 
   void setChip(String c) {
     chip = c;
-    showAll = false;
     notifyListeners();
   }
 
   void setQuery(String q) {
     query = q;
-    showAll = false;
     notifyListeners();
   }
 
   void setTitle(String q) {
     titleQuery = q;
-    showAll = false;
     notifyListeners();
   }
 
   void togglePick(String b) {
     if (!picked.remove(b)) picked.add(b);
-    showAll = false;
     notifyListeners();
   }
 
-  void revealAll() {
-    showAll = true;
+  void clearPicks() {
+    picked.clear();
+    query = '';
+    applied = false;
     notifyListeners();
   }
 
-  /// Gabungan kata ketik + chip terpilih.
+  /// Gabungan kata ketik + chip terpilih (dipakai saat pill ditekan).
   Set<String> get inputs => {
         ...query
             .toLowerCase()
@@ -74,20 +70,4 @@ class HomeProvider extends ChangeNotifier {
             .where((w) => w.length >= 3),
         ...picked,
       };
-
-  bool get searching =>
-      inputs.isNotEmpty ||
-      titleQuery.trim().isNotEmpty ||
-      chip != 'Semua' ||
-      showAll;
-
-  ({List<Recipe> top3, List<Recipe> rest}) get results {
-    if (titleQuery.trim().isNotEmpty) {
-      final all = repo.searchTitle(titleQuery.trim());
-      return (top3: all.take(3).toList(), rest: all.skip(3).take(17).toList());
-    }
-    if (chip == 'Semua') return repo.search(inputs);
-    final t = repo.byTag(chip);
-    return (top3: t.take(3).toList(), rest: t.skip(3).take(17).toList());
-  }
 }

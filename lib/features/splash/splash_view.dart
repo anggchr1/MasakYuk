@@ -13,9 +13,9 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   static const _texts = [
-    'Menyiapkan bumbu dapur...',
+    'Menyiapkan bumbu nusantara...',
     'Memanaskan wajan...',
-    'Menyiapkan rekomendasi resep...',
+    'Menata 1500+ resep dapur...',
   ];
   int _i = 0;
   Timer? _t;
@@ -74,11 +74,11 @@ class _SplashScreenState extends State<SplashScreen> {
                     TextSpan(
                         text: 'Yuk',
                         style:
-                            TextStyle(color: AppColors.primary)),
+                            TextStyle(color: AppColors.amber)),
                   ],
                 ),
               ),
-              const Text('RESEP PINTAR & ASISTEN AI',
+              const Text('RESEP PINTAR TANPA AI',
                   style: TextStyle(
                       fontSize: 10,
                       letterSpacing: 2,
@@ -132,7 +132,7 @@ class _SplashScreenState extends State<SplashScreen> {
                         backgroundColor:
                             AppColors.primary),
                     SizedBox(width: 6),
-                    Text('Versi 1.0.0 • 1500+ Resep Nusantara',
+                    Text('Versi 1.0.0 • 1500+ Resep Nusantara • Tanpa AI',
                         style: TextStyle(fontSize: 11)),
                   ],
                 ),

@@ -48,6 +48,42 @@ class _CookingScreenState extends State<CookingScreen> {
   int _mins(String s) =>
       (CookingProvider.secsFor(s) / 60).round().clamp(1, 60);
 
+  /// Nama tahap ala desain (Marinasi/Goreng/...) dari kata kunci langkah.
+  String _stage(String s) {
+    final t = s.toLowerCase();
+    if (t.contains('goreng')) return 'Menggoreng';
+    if (t.contains('rebus') || t.contains('didih')) {
+      return 'Merebus';
+    }
+    if (t.contains('tumis')) return 'Menumis';
+    if (t.contains('bakar') || t.contains('panggang')) {
+      return 'Memanggang';
+    }
+    if (t.contains('kukus')) return 'Mengukus';
+    if (t.contains('potong') ||
+        t.contains('iris') ||
+        t.contains('cincang')) {
+      return 'Memotong';
+    }
+    if (t.contains('campur') || t.contains('aduk')) {
+      return 'Mencampur';
+    }
+    if (t.contains('saji') || t.contains('hidang')) {
+      return 'Penyajian';
+    }
+    if (t.contains('marinasi') ||
+        t.contains('rendam') ||
+        t.contains('diamkan')) {
+      return 'Marinasi';
+    }
+    if (t.contains('blender') ||
+        t.contains('halus') ||
+        t.contains('ulek')) {
+      return 'Menghaluskan';
+    }
+    return 'Memasak';
+  }
+
   /// Bahan yang disebut di langkah ini (cocokkan keyword).
   List<String> _stepIngredients(String step) {
     final s = step.toLowerCase();
@@ -81,15 +117,17 @@ class _CookingScreenState extends State<CookingScreen> {
           children: [
             const Text('MODE MEMASAK',
                 style: TextStyle(
-                    fontSize: 10,
-                    letterSpacing: 1.5,
+                    fontSize: 11,
+                    letterSpacing: 0.55,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.chocolateMuted)),
             Text(widget.recipe.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800)),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.chocolate)),
           ],
         ),
         centerTitle: true,
@@ -138,9 +176,9 @@ class _CookingScreenState extends State<CookingScreen> {
               Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(32),
                     child: SizedBox(
-                      height: 190,
+                      height: 224,
                       width: double.infinity,
                       child: AppImage(
                         url: photoFor(widget.recipe),
@@ -182,81 +220,215 @@ class _CookingScreenState extends State<CookingScreen> {
                 ],
               ),
               const SizedBox(height: 14),
-              Chip(label: Text(widget.recipe.category)),
-              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFE2D5),
+                  borderRadius:
+                      BorderRadius.circular(9999),
+                ),
+                child: Text('Tahap ${_stage(step)}',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF7F2500))),
+              ),
+              const SizedBox(height: 8),
               Text(
                 'Langkah ${_cp.index + 1}: ${_clip(step)}',
                 style: const TextStyle(
-                    fontSize: 21,
+                    fontSize: 26,
                     fontWeight: FontWeight.w800,
+                    letterSpacing: -0.65,
                     color: AppColors.chocolate,
-                    height: 1.3),
+                    height: 34 / 26),
               ),
               const SizedBox(height: 8),
               Text(step,
                   style: const TextStyle(
-                      fontSize: 15,
-                      height: 1.6,
-                      color: AppColors.chocolate)),
+                      fontSize: 16,
+                      height: 26 / 16,
+                      color: AppColors.chocolateMuted)),
               const SizedBox(height: 16),
               _timerCard(),
               if (ings.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                Row(
-                  children: const [
-                    Icon(Icons.kitchen,
-                        size: 18,
-                        color: AppColors.primary),
-                    SizedBox(width: 6),
-                    Text('Bahan di Langkah Ini',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700)),
-                    Spacer(),
-                    Text('Centang jika sudah masuk',
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors
-                                .chocolateMuted)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ...ings.map((ing) => Card(
-                      margin:
-                          const EdgeInsets.only(bottom: 8),
-                      child: CheckboxListTile(
-                        value:
-                            _cp.boxChecked.contains(ing),
-                        onChanged: (_) =>
-                            _cp.toggleBox(ing),
-                        title: Text(ing,
-                            style: const TextStyle(
-                                fontSize: 14)),
-                        controlAffinity:
-                            ListTileControlAffinity
-                                .leading,
-                        contentPadding:
-                            const EdgeInsets.symmetric(
-                                horizontal: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.sand,
+                    borderRadius:
+                        BorderRadius.circular(32),
+                  ),
+                  child: Column(
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.kitchen,
+                              size: 18,
+                              color: AppColors.primary),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                                'Bahan di Langkah Ini',
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight:
+                                        FontWeight.w600,
+                                    color: AppColors
+                                        .chocolate)),
+                          ),
+                          Text('Centang jika sudah masuk',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight:
+                                      FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                  color: AppColors
+                                      .chocolateMuted)),
+                        ],
                       ),
-                    )),
+                      const SizedBox(height: 12),
+                      ...ings.map((ing) {
+                        final checked = _cp.boxChecked
+                            .contains(ing);
+                        return Padding(
+                          padding:
+                              const EdgeInsets.only(
+                                  bottom: 8),
+                          child: GestureDetector(
+                            onTap: () =>
+                                _cp.toggleBox(ing),
+                            child: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 13),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius:
+                                    BorderRadius.circular(
+                                        16),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration:
+                                        BoxDecoration(
+                                      color: checked
+                                          ? AppColors
+                                              .primary
+                                          : Colors.white,
+                                      borderRadius:
+                                          BorderRadius
+                                              .circular(
+                                                  6),
+                                      border: checked
+                                          ? null
+                                          : Border.all(
+                                              color: const Color(
+                                                  0xFFDEC0B7)),
+                                    ),
+                                    child: checked
+                                        ? const Icon(
+                                            Icons.check,
+                                            size: 16,
+                                            color: Colors
+                                                .white)
+                                        : null,
+                                  ),
+                                  const SizedBox(
+                                      width: 12),
+                                  Expanded(
+                                    child: Text(ing,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight:
+                                              FontWeight
+                                                  .w700,
+                                          color: checked
+                                              ? AppColors
+                                                  .chocolateMuted
+                                              : AppColors
+                                                  .chocolate,
+                                          decoration: checked
+                                              ? TextDecoration
+                                                  .lineThrough
+                                              : null,
+                                        )),
+                                  ),
+                                  if (checked)
+                                    Container(
+                                      padding:
+                                          const EdgeInsets
+                                              .symmetric(
+                                                  horizontal:
+                                                      10,
+                                                  vertical:
+                                                      2),
+                                      decoration:
+                                          BoxDecoration(
+                                        color: const Color(
+                                            0xFFFFE2D5),
+                                        borderRadius:
+                                            BorderRadius
+                                                .circular(
+                                                    9999),
+                                      ),
+                                      child: const Text(
+                                          'Siap',
+                                          style: TextStyle(
+                                              fontSize:
+                                                  11,
+                                              fontWeight:
+                                                  FontWeight
+                                                      .w700,
+                                              color: Color(
+                                                  0xFF7F2500))),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
               ],
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(17),
                 decoration: BoxDecoration(
-                  color: AppColors.sand,
-                  borderRadius: BorderRadius.circular(24),
+                  color: const Color(0xFFFFE2D5)
+                      .withValues(alpha: 0.6),
+                  borderRadius:
+                      BorderRadius.circular(32),
+                  border: Border.all(
+                      color: const Color(0xFFDEC0B7)
+                          .withValues(alpha: 0.5)),
                 ),
                 child: Row(
                   crossAxisAlignment:
                       CrossAxisAlignment.start,
                   children: [
-                    const CircleAvatar(
-                      backgroundColor: AppColors.primary,
-                      child: Icon(Icons.lightbulb_outline,
-                          color: Colors.white, size: 20),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                          Icons.lightbulb_outline,
+                          color: Colors.white,
+                          size: 20),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment:
@@ -264,17 +436,21 @@ class _CookingScreenState extends State<CookingScreen> {
                         children: [
                           const Text('Tips Chef',
                               style: TextStyle(
+                                  fontSize: 18,
                                   fontWeight:
-                                      FontWeight.w700)),
-                          const SizedBox(height: 4),
+                                      FontWeight.w700,
+                                  color:
+                                      AppColors.chocolate)),
+                          const SizedBox(height: 3),
                           Text(
                             _tips[widget.recipe.docId.hashCode
                                     .abs() %
                                 _tips.length],
                             style: const TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
+                                height: 19.5 / 12,
                                 color: AppColors
-                                    .chocolateMuted),
+                                    .chocolate),
                           ),
                         ],
                       ),
@@ -287,7 +463,7 @@ class _CookingScreenState extends State<CookingScreen> {
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
+                      letterSpacing: 0.55,
                       color: AppColors.chocolateMuted)),
               const SizedBox(height: 8),
               SingleChildScrollView(
@@ -303,25 +479,57 @@ class _CookingScreenState extends State<CookingScreen> {
                         onTap: () => _nav(
                             () => _cp.jumpTo(e.key),
                             e.value),
-                        child: CircleAvatar(
-                          radius: 26,
-                          backgroundColor: active
-                              ? AppColors.primary
-                              : AppColors.sand,
-                          child: done
-                              ? const Icon(Icons.check,
-                                  color: AppColors.primary)
-                              : Text(
-                                  '${e.key + 1}',
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w800,
-                                    color: active
-                                        ? Colors.white
-                                        : AppColors
-                                            .chocolate,
-                                  ),
+                        child: Container(
+                          padding:
+                              const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8),
+                          decoration: BoxDecoration(
+                            color: active
+                                ? AppColors.primary
+                                : AppColors.sand,
+                            borderRadius:
+                                BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                '${e.key + 1}. ${_stage(e.value)}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight:
+                                      FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                  color: active
+                                      ? Colors.white
+                                      : AppColors.chocolate,
                                 ),
+                              ),
+                              const SizedBox(height: 2),
+                              done
+                                  ? const Icon(Icons.check,
+                                      size: 14,
+                                      color:
+                                          AppColors.primary)
+                                  : Text(
+                                      active
+                                          ? 'Aktif'
+                                          : 'Nanti',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight:
+                                            FontWeight.w700,
+                                        color: active
+                                            ? Colors.white
+                                                .withValues(
+                                                    alpha:
+                                                        0.9)
+                                            : AppColors
+                                                .chocolateMuted,
+                                      ),
+                                    ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -391,90 +599,122 @@ class _CookingScreenState extends State<CookingScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.sand,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(32),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.timer_outlined,
+              const Icon(Icons.timer_outlined,
                   color: AppColors.primary, size: 20),
-              SizedBox(width: 6),
-              Text(
-                'Pengatur Waktu Langkah',
-                style: TextStyle(fontWeight: FontWeight.w700),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Pengatur Waktu Langkah',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.chocolate),
+                ),
               ),
-              Spacer(),
-              Chip(
-                label: Text('Otomatis'),
-                visualDensity: VisualDensity.compact,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius:
+                      BorderRadius.circular(9999),
+                  border: Border.all(
+                      color: const Color(0xFFDEC0B7)
+                          .withValues(alpha: 0.3)),
+                ),
+                child: const Text(
+                  'Otomatis Berdering',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                      color: AppColors.chocolateMuted),
+                ),
               ),
             ],
           ),
-          SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _cp.clock,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.chocolate,
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _cp.clock,
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.3,
+                          color: AppColors.chocolate,
+                        ),
                       ),
+                      Text(
+                        _cp.targetLabel,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.chocolateMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                CircleAvatar(
+                  backgroundColor: AppColors.sand,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: AppColors.chocolate,
                     ),
-                    Text(
-                      _cp.targetLabel,
+                    onPressed: _resetStepTimer,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: AppColors.sand,
+                  child: TextButton(
+                    onPressed: _cp.addMinute,
+                    child: const Text(
+                      '+1',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.chocolateMuted,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              CircleAvatar(
-                backgroundColor: Colors.white,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.refresh,
-                    color: AppColors.chocolate,
                   ),
-                  onPressed: _resetStepTimer,
                 ),
-              ),
-              SizedBox(width: 8),
-              CircleAvatar(
-                backgroundColor: Colors.white,
-                child: TextButton(
-                  onPressed: _cp.addMinute,
-                  child: Text(
-                    '+1',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppColors.primary,
+                  child: IconButton(
+                    icon: Icon(
+                      _cp.running
+                          ? Icons.pause
+                          : Icons.play_arrow,
+                      color: Colors.white,
                     ),
+                    onPressed: _cp.toggleTimer,
                   ),
                 ),
-              ),
-              SizedBox(width: 8),
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: AppColors.primary,
-                child: IconButton(
-                  icon: Icon(
-                    _cp.running ? Icons.pause : Icons.play_arrow,
-                    color: Colors.white,
-                  ),
-                  onPressed: _cp.toggleTimer,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
