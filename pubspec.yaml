@@ -43,6 +43,8 @@ dependencies:
   flutter_svg: ^2.0.0
   geolocator: ^14.1.1
   geocoding: ^5.0.0
+  http: ^1.6.0
+  google_sign_in: 6.3.0
 
 dev_dependencies:
   flutter_test:

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../models/know.dart';
 import '../models/recipe.dart';
 import '../models/social.dart';
+import 'api_recipe_source.dart';
 
 /// Sumber data sementara: assets/sample_recipes.json (24 resep).
 /// NANTI (M2): ganti _loadLocal dengan query Firestore:
@@ -43,9 +44,12 @@ class RecipeRepository extends ChangeNotifier {
     if (loaded) return;
     Future<List> loadJson(String p) async =>
         (json.decode(await rootBundle.loadString(p)) as List);
-    final list =
-        (await loadJson('assets/sample_recipes.json')).cast<Map<String, dynamic>>();
-    _system.addAll(list.map(Recipe.fromJson));
+    // Resep: dari backend (API sumber utama). Tanpa fallback lokal.
+    try {
+      _system.addAll(await ApiRecipeSource().fetchAll());
+    } catch (e) {
+      debugPrint('Gagal memuat resep dari API: $e');
+    }
     final pr =
         (await loadJson('assets/prices.json')).cast<Map<String, dynamic>>();
     _prices.addAll(pr);

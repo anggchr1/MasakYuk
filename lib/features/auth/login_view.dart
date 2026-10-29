@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/theme/app_theme.dart';
+import 'auth_provider.dart';
 
 /// Login v2 — ikut Figma "2. Login - MasakYuk v2" (62:373):
 /// hero foto + badge melayang, judul, 2 tombol pill, trust row, disclaimer.
-/// NANTI M2: google_sign_in + FirebaseAuth (tombol sudah pada tempatnya).
+/// Tombol Google memakai OAuth yang sama dengan web (lihat AuthProvider).
 class LoginScreen extends StatelessWidget {
-  final VoidCallback onLogin;
+  final AuthProvider auth;
   final VoidCallback onGuest;
-  const LoginScreen(
-      {super.key, required this.onLogin, required this.onGuest});
+  const LoginScreen({super.key, required this.auth, required this.onGuest});
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +203,8 @@ class LoginScreen extends StatelessWidget {
                       height: 52,
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: onLogin,
+                        onPressed:
+                            auth.busy ? null : auth.loginWithGoogle,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: AppColors.chocolate,
@@ -213,23 +214,42 @@ class LoginScreen extends StatelessWidget {
                           side: const BorderSide(
                               color: Color(0xFFDEC0B7)),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SvgPicture.asset(
-                              'assets/images/google_g.svg',
-                              width: 20,
-                              height: 20,
-                            ),
-                            const SizedBox(width: 12),
-                            const Text('Masuk dengan Google',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 14)),
-                          ],
-                        ),
+                        child: auth.busy
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2),
+                              )
+                            : Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.center,
+                                children: [
+                                  SvgPicture.asset(
+                                    'assets/images/google_g.svg',
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text('Masuk dengan Google',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14)),
+                                ],
+                              ),
                       ),
                     ),
+                    if (auth.error != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        auth.error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     SizedBox(
                       height: 52,

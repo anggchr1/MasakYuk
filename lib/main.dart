@@ -53,7 +53,7 @@ class _MasakYukAppState extends State<MasakYukApp> {
                 onLogout: _auth.logout,
               )
             : LoginScreen(
-              onLogin: _auth.login,
+              auth: _auth,
               onGuest: _auth.loginAsGuest,
             ),
       ),
