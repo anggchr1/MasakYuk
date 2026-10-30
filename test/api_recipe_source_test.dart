@@ -42,4 +42,29 @@ void main() {
     expect(r.ingredientsKeywords,
         containsAll(['ayam', 'fillet', 'bawang', 'putih']));
   });
+
+  test('resep milik sendiri: status draf -> belum terbit', () {
+    final r = ApiRecipeSource().toRecipe({
+      'id': 9,
+      'judul': 'Draf Rahasia',
+      'status': 'draf',
+      'pemilik_id': 3,
+    }, mine: true);
+
+    expect(r.isPublished, isFalse);
+    expect(r.origin, 'custom');
+    expect(r.ownerId, '3');
+  });
+
+  test('bahanPayload memecah jumlah & satuan', () {
+    final api = ApiRecipeSource();
+    expect(api.bahanPayload('2 siung bawang putih'),
+        {'nama': 'bawang putih', 'jumlah': 2, 'satuan': 'siung'});
+    expect(api.bahanPayload('500 gram ayam fillet'),
+        {'nama': 'ayam fillet', 'jumlah': 500, 'satuan': 'gram'});
+    expect(api.bahanPayload('garam secukupnya'),
+        {'nama': 'garam secukupnya'});
+    expect(api.bahanPayload('1/2 sdt merica'),
+        {'nama': 'merica', 'jumlah': 0.5, 'satuan': 'sdt'});
+  });
 }

@@ -27,12 +27,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _mine = true;
   bool _autoClean = false;
 
-  int get _made => widget.repo.customs
-      .where((r) => r.ownerId == 'local')
-      .length;
+  int get _made => widget.repo.customs.length;
   int get _saved => widget.repo.favorites.length;
   int get _liked => widget.repo.customs
-      .where((r) => r.ownerId == 'local')
       .fold<int>(0, (a, r) => a + r.loves);
 
   @override
@@ -40,9 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return AnimatedBuilder(
       animation: widget.repo,
       builder: (_, _) {
-        final mine = widget.repo.customs
-            .where((r) => r.ownerId == 'local')
-            .toList();
+        final mine = widget.repo.customs;
         final saved = widget.repo.favorites;
         return ListView(
           padding: EdgeInsets.zero,
@@ -546,19 +541,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       trailing: PopupMenuButton<String>(
         iconSize: 20,
         padding: EdgeInsets.zero,
-        onSelected: (v) {
-          if (v == 'toggle') {
-            widget.repo.togglePublish(r.docId);
-          } else if (v == 'edit') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => AddRecipeScreen(
-                      repo: widget.repo,
-                      existing: r)),
-            );
-          } else if (v == 'delete') {
-            widget.repo.deleteCustom(r.docId);
+        onSelected: (v) async {
+          try {
+            if (v == 'toggle') {
+              await widget.repo.togglePublish(r.docId);
+            } else if (v == 'edit') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => AddRecipeScreen(
+                        repo: widget.repo,
+                        existing: r,
+                        onNeedLogin: widget.onLogout)),
+              );
+            } else if (v == 'delete') {
+              await widget.repo.deleteCustom(r.docId);
+            }
+          } catch (_) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Gagal menyimpan perubahan.')));
           }
         },
         itemBuilder: (_) => [
@@ -684,12 +687,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         value: _autoClean,
                         activeThumbColor:
                             AppColors.primary,
-                        onChanged: (v) {
+                        onChanged: (v) async {
                           setState(
                               () => _autoClean = v);
                           if (v) {
-                            final n = widget.repo
+                            final n = await widget.repo
                                 .purgeOldDrafts(30);
+                            if (!mounted) return;
                             ScaffoldMessenger.of(context)
                                 .showSnackBar(SnackBar(
                                     content: Text(n > 0

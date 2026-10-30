@@ -55,6 +55,24 @@ class ApiClient {
     return _decode(res);
   }
 
+  Future<dynamic> put(String path, {Map<String, dynamic>? body}) async {
+    final res = await _client
+        .put(
+          Uri.parse('$baseUrl$path'),
+          headers: {..._headers, 'Content-Type': 'application/json'},
+          body: json.encode(body ?? const <String, dynamic>{}),
+        )
+        .timeout(const Duration(seconds: 20));
+    return _decode(res);
+  }
+
+  Future<dynamic> delete(String path) async {
+    final res = await _client
+        .delete(Uri.parse('$baseUrl$path'), headers: _headers)
+        .timeout(const Duration(seconds: 20));
+    return _decode(res);
+  }
+
   dynamic _decode(http.Response res) {
     if (res.statusCode >= 400) {
       throw ApiException(res.statusCode, res.body);

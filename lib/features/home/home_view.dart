@@ -16,7 +16,8 @@ import 'home_provider.dart';
 /// Foto & teks judul tetap dari data (dinamis), bukan tempelan mockup.
 class HomeScreen extends StatefulWidget {
   final RecipeRepository repo;
-  const HomeScreen({super.key, required this.repo});
+  final VoidCallback? onNeedLogin;
+  const HomeScreen({super.key, required this.repo, this.onNeedLogin});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -65,7 +66,9 @@ class _HomeScreenState extends State<HomeScreen> {
             context,
             MaterialPageRoute(
                 builder: (_) =>
-                    AddRecipeScreen(repo: widget.repo)),
+                    AddRecipeScreen(
+                        repo: widget.repo,
+                        onNeedLogin: widget.onNeedLogin)),
           ),
           child: const Icon(Icons.add),
         ),

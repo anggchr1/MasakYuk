@@ -13,7 +13,9 @@ import '../recipe_form/add_recipe_view.dart';
 /// mode Kelola (hapus cepat) + tips + Buat Resep Baru.
 class FavoritesScreen extends StatefulWidget {
   final RecipeRepository repo;
-  const FavoritesScreen({super.key, required this.repo});
+  final VoidCallback? onNeedLogin;
+  const FavoritesScreen(
+      {super.key, required this.repo, this.onNeedLogin});
 
   @override
   State<FavoritesScreen> createState() => _FavoritesScreenState();
@@ -37,9 +39,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       animation: widget.repo,
       builder: (_, _) {
         final favs = widget.repo.favorites;
-        final mine = widget.repo.customs
-            .where((r) => r.ownerId == 'local')
-            .toList();
+        final mine = widget.repo.customs;
         var items = _mine ? mine : favs;
         final q = _ctrl.text.toLowerCase();
         if (q.isNotEmpty) {
@@ -160,7 +160,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               context,
               MaterialPageRoute(
                   builder: (_) =>
-                      AddRecipeScreen(repo: widget.repo)),
+                      AddRecipeScreen(
+                          repo: widget.repo,
+                          onNeedLogin: widget.onNeedLogin)),
             ),
             backgroundColor: AppColors.primary,
             icon: const Icon(Icons.add),
@@ -186,7 +188,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             '"${r.title}" akan dihapus permanen dari koleksimu.',
         yesLabel: 'Ya, Hapus',
       );
-      if (ok) widget.repo.deleteCustom(r.docId);
+      if (ok) {
+        try {
+          await widget.repo.deleteCustom(r.docId);
+        } catch (_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Gagal menghapus, coba lagi.')));
+        }
+      }
     } else {
       widget.repo.toggleFavorite(r.docId);
     }

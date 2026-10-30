@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/api/api_client.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_image.dart';
 import '../../data/food_photos.dart';
@@ -12,8 +13,9 @@ import '../../models/recipe.dart';
 class AddRecipeScreen extends StatefulWidget {
   final RecipeRepository repo;
   final Recipe? existing; // mode Ubah bila diisi
+  final VoidCallback? onNeedLogin; // dipanggil bila tamu ingin menyimpan
   const AddRecipeScreen(
-      {super.key, required this.repo, this.existing});
+      {super.key, required this.repo, this.existing, this.onNeedLogin});
 
   @override
   State<AddRecipeScreen> createState() => _AddRecipeScreenState();
@@ -28,6 +30,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   String _category = 'Tradisional';
   String _difficulty = 'Sedang';
   bool _publish = true;
+  bool _saving = false;
   final List<TextEditingController> _ings = [
     TextEditingController(),
     TextEditingController(),
@@ -135,7 +138,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
             padding: const EdgeInsets.only(right: 12),
             child: Center(
               child: GestureDetector(
-                onTap: () => _save(false),
+                onTap: _saving ? null : () => _save(false),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 6),
@@ -731,7 +734,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                 child: SizedBox(
                   height: 52,
                   child: OutlinedButton.icon(
-                    onPressed: () => _save(false),
+                    onPressed: _saving ? null : () => _save(false),
                     icon: const Icon(
                         Icons.inventory_2_outlined,
                         size: 18),
@@ -746,8 +749,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                 child: SizedBox(
                   height: 52,
                   child: ElevatedButton.icon(
-                    onPressed: () =>
-                        _save(_publish),
+                    onPressed: _saving
+                        ? null
+                        : () => _save(_publish),
                     icon: const Icon(
                         Icons.cloud_upload_outlined,
                         size: 18),
@@ -877,7 +881,8 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     return 'Perkiraan $lo - $hi (estimasi)';
   }
 
-  void _save(bool publish) {
+  Future<void> _save(bool publish) async {
+    if (_saving) return;
     final ings =
         _ings.map((c) => c.text.trim()).where((t) => t.isNotEmpty).toList();
     final steps =
@@ -892,47 +897,94 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       );
       return;
     }
-    if (publish) setState(() => _publish = true);
-    if (!publish) setState(() => _publish = false);
-    final manual = _priceValue();
-    final ex = widget.existing;
-    if (ex == null) {
-      widget.repo.addCustom(
-        title: _title.text.trim(),
-        category: _category,
-        ingredients: ings,
-        steps: steps,
-        publish: publish,
-        description: _desc.text.trim(),
-        durationText: '${_waktu.text.trim()} mnt',
-        difficulty: _difficulty,
-        servings: '${_porsi.text.trim()} orang',
-        estCostManual: manual,
+
+    // Tamu tidak punya token: resep hanya bisa masuk ke akun.
+    if (widget.repo.api.token == null) {
+      final mauMasuk = await showDialog<bool>(
+        context: context,
+        builder: (d) => AlertDialog(
+          title: const Text('Masuk dulu, ya'),
+          content: const Text(
+              'Resep barumu disimpan ke akun. Masuk dengan Google untuk '
+              'melanjutkan.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(d, false),
+                child: const Text('Nanti')),
+            ElevatedButton(
+                onPressed: () => Navigator.pop(d, true),
+                child: const Text('Masuk')),
+          ],
+        ),
       );
-    } else {
-      widget.repo.updateCustom(
-        ex.docId,
-        title: _title.text.trim(),
-        category: _category,
-        ingredients: ings,
-        steps: steps,
-        publish: publish,
-        description: _desc.text.trim(),
-        durationText: '${_waktu.text.trim()} mnt',
-        difficulty: _difficulty,
-        servings: '${_porsi.text.trim()} orang',
-        estCostManual: manual,
-      );
+      if (mauMasuk == true && mounted) {
+        Navigator.pop(context); // tutup form
+        widget.onNeedLogin?.call(); // tamu keluar -> layar login
+      }
+      return;
     }
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text(ex == null
-              ? (publish
-                  ? 'Resep diterbitkan ke pool publik!'
-                  : 'Draf tersimpan privat.')
-              : 'Resep diperbarui!')),
-    );
+
+    final ex = widget.existing;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    setState(() {
+      _saving = true;
+      _publish = publish;
+    });
+    final manual = _priceValue();
+    try {
+      if (ex == null) {
+        await widget.repo.addCustom(
+          title: _title.text.trim(),
+          category: _category,
+          ingredients: ings,
+          steps: steps,
+          publish: publish,
+          description: _desc.text.trim(),
+          durationText: '${_waktu.text.trim()} mnt',
+          difficulty: _difficulty,
+          servings: '${_porsi.text.trim()} orang',
+          estCostManual: manual,
+        );
+      } else {
+        await widget.repo.updateCustom(
+          ex.docId,
+          title: _title.text.trim(),
+          category: _category,
+          ingredients: ings,
+          steps: steps,
+          publish: publish,
+          description: _desc.text.trim(),
+          durationText: '${_waktu.text.trim()} mnt',
+          difficulty: _difficulty,
+          servings: '${_porsi.text.trim()} orang',
+          estCostManual: manual,
+        );
+      }
+      navigator.pop();
+      messenger.showSnackBar(
+        SnackBar(
+            content: Text(ex == null
+                ? (publish
+                    ? 'Resep diterbitkan ke pool publik!'
+                    : 'Draf tersimpan privat.')
+                : 'Resep diperbarui!')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      messenger.showSnackBar(SnackBar(
+          content: Text('Gagal menyimpan: ${_pesan(e)}')));
+    }
+  }
+
+  String _pesan(Object e) {
+    if (e is ApiException) {
+      if (e.status == 401) return 'sesi berakhir, masuk ulang.';
+      if (e.status == 422) return 'data belum valid.';
+      return 'server menolak (${e.status}).';
+    }
+    return 'periksa koneksi ke server.';
   }
 
   @override

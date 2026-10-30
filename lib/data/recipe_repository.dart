@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import '../core/api/api_client.dart';
 import '../models/know.dart';
 import '../models/recipe.dart';
 import '../models/social.dart';
@@ -11,6 +12,10 @@ import 'api_recipe_source.dart';
 ///   recipes_master limit(20) + recipes where isPublished==true + milik uid.
 /// Interface search/top3/rest TIDAK berubah.
 class RecipeRepository extends ChangeNotifier {
+  /// Satu ApiClient untuk semua request — token login ikut otomatis.
+  final ApiClient api = ApiClient();
+  late final ApiRecipeSource _apiResep = ApiRecipeSource(api);
+
   final List<Recipe> _system = [];
   final List<Recipe> _custom = [];
   final Set<String> _favorites = {};
@@ -34,11 +39,29 @@ class RecipeRepository extends ChangeNotifier {
         ..._custom.where((r) => _favorites.contains(r.docId)),
       ];
 
-  /// Pool pencarian = master + custom yang publish + custom milik sendiri.
-  List<Recipe> get _pool => [
-        ..._system,
-        ..._custom.where((r) => r.isPublished || r.ownerId == 'local'),
-      ];
+  /// Pool pencarian = resep publik + resep milik sendiri yang terbit.
+  /// Resep sendiri didahulukan supaya tidak dobel dengan daftar publik.
+  List<Recipe> get _pool {
+    final mine = {for (final r in _custom) r.docId};
+    return [
+      ..._system.where((r) => !mine.contains(r.docId)),
+      ..._custom.where((r) => r.isPublished),
+    ];
+  }
+
+  /// Muat ulang resep milik akun yang login (termasuk draf).
+  Future<void> muatResepMilikku() async {
+    if (api.token == null) return;
+    try {
+      final hasil = await _apiResep.fetchMine();
+      _custom
+        ..clear()
+        ..addAll(hasil);
+    } catch (e) {
+      debugPrint('Gagal memuat resep milik sendiri: $e');
+    }
+    notifyListeners();
+  }
 
   Future<void> load() async {
     if (loaded) return;
@@ -46,7 +69,7 @@ class RecipeRepository extends ChangeNotifier {
         (json.decode(await rootBundle.loadString(p)) as List);
     // Resep: dari backend (API sumber utama). Tanpa fallback lokal.
     try {
-      _system.addAll(await ApiRecipeSource().fetchAll());
+      _system.addAll(await _apiResep.fetchAll());
     } catch (e) {
       debugPrint('Gagal memuat resep dari API: $e');
     }
@@ -276,7 +299,8 @@ class RecipeRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addCustom({
+  /// Simpan resep baru ke akun yang login; terbitkan bila [publish].
+  Future<void> addCustom({
     required String title,
     required String category,
     required List<String> ingredients,
@@ -287,39 +311,19 @@ class RecipeRepository extends ChangeNotifier {
     String? difficulty,
     String? servings,
     int? estCostManual,
-  }) {
-    final kws = ingredients
-        .join(' ')
-        .toLowerCase()
-        .split(RegExp(r'[^a-z]+'))
-        .where((w) => w.length >= 3)
-        .toSet()
-        .take(20)
-        .toList();
-    _custom.add(Recipe(
-      docId: 'custom-${DateTime.now().millisecondsSinceEpoch}',
-      title: title,
-      category: category,
-      tags: [category.toLowerCase()],
-      ingredientsRaw: ingredients,
-      ingredientsKeywords: kws,
-      stepsList: steps,
-      calories: null,
-      proteins: null,
-      fat: null,
-      carbohydrate: null,
-      hasNutrition: false, // dormant, tanpa AI (keputusan v2.1)
-      nutritionSource: 'missing',
-      loves: 0,
-      origin: 'custom',
-      isPublished: publish,
-      ownerId: 'local',
-      description: description,
-      durationText: durationText,
-      difficulty: difficulty,
-      servings: servings,
-      estCostManual: estCostManual,
-    ));
+  }) async {
+    var r = await _apiResep.create(
+      judul: title,
+      kategori: category,
+      bahan: ingredients,
+      langkah: steps,
+      deskripsi: description,
+      porsi: _angkaAwal(servings),
+      waktuMasak: _angkaAwal(durationText),
+      hargaResep: estCostManual,
+    );
+    if (publish) r = await _apiResep.publish(r.docId);
+    _custom.insert(0, r);
     pushNotif(
       kind: 'sistem',
       title: publish ? 'Resep Diterbitkan!' : 'Draf tersimpan',
@@ -330,9 +334,8 @@ class RecipeRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Kelola resep sendiri (Profil → Koleksi Terbitan).
-  /// Ubah resep sendiri (dari menu Kelola). Keyword dihitung ulang.
-  void updateCustom(
+  /// Ubah resep sendiri (dari menu Kelola).
+  Future<void> updateCustom(
     String docId, {
     required String title,
     required String category,
@@ -344,48 +347,34 @@ class RecipeRepository extends ChangeNotifier {
     String? difficulty,
     String? servings,
     int? estCostManual,
-  }) {
-    final i = _custom.indexWhere((r) => r.docId == docId);
-    if (i < 0) return;
-    final old = _custom[i];
-    final kws = ingredients
-        .join(' ')
-        .toLowerCase()
-        .split(RegExp(r'[^a-z]+'))
-        .where((w) => w.length >= 3)
-        .toSet()
-        .take(20)
-        .toList();
-    _custom[i] = Recipe(
-      docId: old.docId,
-      title: title,
-      category: category,
-      tags: [category.toLowerCase()],
-      ingredientsRaw: ingredients,
-      ingredientsKeywords: kws,
-      stepsList: steps,
-      calories: null,
-      proteins: null,
-      fat: null,
-      carbohydrate: null,
-      hasNutrition: false,
-      nutritionSource: 'missing',
-      loves: old.loves,
-      origin: 'custom',
-      isPublished: publish,
-      ownerId: 'local',
-      description: description,
-      durationText: durationText,
-      difficulty: difficulty,
-      servings: servings,
-      estCostManual: estCostManual,
-      createdAt: old.createdAt ?? DateTime.now(),
+  }) async {
+    var r = await _apiResep.update(
+      docId,
+      judul: title,
+      kategori: category,
+      bahan: ingredients,
+      langkah: steps,
+      deskripsi: description,
+      porsi: _angkaAwal(servings),
+      waktuMasak: _angkaAwal(durationText),
+      hargaResep: estCostManual,
     );
+    if (publish != r.isPublished) {
+      r = publish
+          ? await _apiResep.publish(docId)
+          : await _apiResep.tarik(docId);
+    }
+    final i = _custom.indexWhere((r) => r.docId == docId);
+    if (i < 0) {
+      _custom.insert(0, r);
+    } else {
+      _custom[i] = r;
+    }
     notifyListeners();
   }
 
-  /// Hapus draf lebih tua dari [days] hari. Kembalikan jumlah terhapus.
-  int purgeOldDrafts(int days) {
+  /// Arsipkan draf lebih tua dari [days] hari. Kembalikan jumlah terarsip.
+  Future<int> purgeOldDrafts(int days) async {
     final cut =
         DateTime.now().subtract(Duration(days: days));
     final doomed = _custom
@@ -395,6 +384,7 @@ class RecipeRepository extends ChangeNotifier {
             r.createdAt!.isBefore(cut))
         .toList();
     for (final r in doomed) {
+      await _apiResep.archive(r.docId);
       _custom.remove(r);
       _favorites.remove(r.docId);
     }
@@ -402,43 +392,30 @@ class RecipeRepository extends ChangeNotifier {
     return doomed.length;
   }
 
-  void deleteCustom(String docId) {
+  /// Hapus dari koleksi = arsipkan di server.
+  Future<void> deleteCustom(String docId) async {
+    await _apiResep.archive(docId);
     _custom.removeWhere((r) => r.docId == docId);
     _favorites.remove(docId);
     notifyListeners();
   }
 
-  void togglePublish(String docId) {
+  /// Tarik jadi draf / terbitkan lagi.
+  Future<void> togglePublish(String docId) async {
     final i = _custom.indexWhere((r) => r.docId == docId);
     if (i < 0) return;
-    final r = _custom[i];
-    _custom[i] = Recipe(
-      docId: r.docId,
-      title: r.title,
-      category: r.category,
-      tags: r.tags,
-      ingredientsRaw: r.ingredientsRaw,
-      ingredientsKeywords: r.ingredientsKeywords,
-      stepsList: r.stepsList,
-      calories: r.calories,
-      proteins: r.proteins,
-      fat: r.fat,
-      carbohydrate: r.carbohydrate,
-      hasNutrition: r.hasNutrition,
-      nutritionSource: r.nutritionSource,
-      loves: r.loves,
-      origin: r.origin,
-      isPublished: !r.isPublished,
-      ownerId: r.ownerId,
-      description: r.description,
-      durationText: r.durationText,
-      difficulty: r.difficulty,
-      servings: r.servings,
-    );
+    _custom[i] = _custom[i].isPublished
+        ? await _apiResep.tarik(docId)
+        : await _apiResep.publish(docId);
     notifyListeners();
   }
 
+  /// "35 mnt" / "4 orang" -> 35 / 4
+  int? _angkaAwal(String? s) =>
+      s == null ? null : int.tryParse(RegExp(r'\d+').stringMatch(s) ?? '');
+
   void logout() {
+    _custom.clear();
     _favorites.clear();
     notifyListeners();
   }

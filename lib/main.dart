@@ -34,6 +34,9 @@ class _MasakYukAppState extends State<MasakYukApp> {
     _repo = RecipeRepository();
     _auth = AuthProvider(_repo);
     _repo.load(); // NANTI M2: + Firebase.initializeApp + Auth gate
+    _auth.muatSesi().then((_) {
+      if (_auth.loggedIn) _repo.muatResepMilikku();
+    });
   }
 
   @override
@@ -42,20 +45,27 @@ class _MasakYukAppState extends State<MasakYukApp> {
       title: 'MasakYuk',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      home: _splash
-          ? SplashScreen(
-              onDone: () => setState(() => _splash = false))
-          : AnimatedBuilder(
-              animation: _auth,
-              builder: (_, _) => _auth.loggedIn
-                  ? HomeShell(
-                repo: _repo,
-                onLogout: _auth.logout,
-              )
-            : LoginScreen(
-              auth: _auth,
-              onGuest: _auth.loginAsGuest,
-            ),
+      home: AnimatedBuilder(
+        animation: _auth,
+        builder: (_, _) {
+          if (_splash) {
+            return SplashScreen(
+                onDone: () => setState(() => _splash = false));
+          }
+          if (!_auth.siap) {
+            return const Scaffold(
+                body: Center(child: CircularProgressIndicator()));
+          }
+          return _auth.loggedIn
+              ? HomeShell(
+                  repo: _repo,
+                  onLogout: _auth.logout,
+                )
+              : LoginScreen(
+                  auth: _auth,
+                  onGuest: _auth.loginAsGuest,
+                );
+        },
       ),
     );
   }
@@ -93,9 +103,13 @@ class _HomeShellState extends State<HomeShell> {
             HomeScreen(
               key: ValueKey(_homeSalt),
               repo: widget.repo,
+              onNeedLogin: widget.onLogout,
             ),
             CookScreen(repo: widget.repo),
-            FavoritesScreen(repo: widget.repo),
+            FavoritesScreen(
+              repo: widget.repo,
+              onNeedLogin: widget.onLogout,
+            ),
             ProfileScreen(
                 repo: widget.repo, onLogout: widget.onLogout),
           ],
