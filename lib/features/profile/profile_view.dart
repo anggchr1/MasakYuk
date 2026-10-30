@@ -16,8 +16,14 @@ import '../recipe_form/add_recipe_view.dart';
 class ProfileScreen extends StatefulWidget {
   final RecipeRepository repo;
   final VoidCallback onLogout;
+  final bool isGuest;
+  final VoidCallback? onLogin;
   const ProfileScreen(
-      {super.key, required this.repo, required this.onLogout});
+      {super.key,
+      required this.repo,
+      required this.onLogout,
+      this.isGuest = false,
+      this.onLogin});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -713,6 +719,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () async {
+                if (widget.isGuest) {
+                  widget.onLogin?.call();
+                  return;
+                }
                 final ok = await ConfirmDialog.ask(
                   context,
                   title: 'Keluar dari Akun?',
@@ -723,21 +733,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (ok) widget.onLogout();
               },
               style: OutlinedButton.styleFrom(
-                backgroundColor:
-                    const Color(0xFFFFDAD6)
+                backgroundColor: widget.isGuest
+                    ? AppColors.sand
+                    : const Color(0xFFFFDAD6)
                         .withValues(alpha: 0.6),
-                foregroundColor:
-                    const Color(0xFF93000A),
+                foregroundColor: widget.isGuest
+                    ? AppColors.primary
+                    : const Color(0xFF93000A),
                 side: BorderSide(
-                    color: const Color(0xFFBA1A1A)
-                        .withValues(alpha: 0.2)),
+                    color: widget.isGuest
+                        ? AppColors.primary
+                        : const Color(0xFFBA1A1A)
+                            .withValues(alpha: 0.2)),
                 shape: const StadiumBorder(),
                 minimumSize:
                     const Size.fromHeight(52),
               ),
-              icon: const Icon(Icons.logout),
-              label: const Text('Keluar Akun',
-                  style: TextStyle(
+              icon: Icon(widget.isGuest
+                  ? Icons.login
+                  : Icons.logout),
+              label: Text(
+                  widget.isGuest ? 'Masuk' : 'Keluar Akun',
+                  style: const TextStyle(
                       fontWeight: FontWeight.w700)),
             ),
           ),

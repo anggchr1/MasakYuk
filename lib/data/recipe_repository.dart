@@ -308,7 +308,6 @@ class RecipeRepository extends ChangeNotifier {
     required bool publish,
     String description = '',
     String? durationText,
-    String? difficulty,
     String? servings,
     int? estCostManual,
   }) async {
@@ -344,7 +343,6 @@ class RecipeRepository extends ChangeNotifier {
     required bool publish,
     String description = '',
     String? durationText,
-    String? difficulty,
     String? servings,
     int? estCostManual,
   }) async {

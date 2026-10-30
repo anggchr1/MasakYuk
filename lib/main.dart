@@ -27,6 +27,18 @@ class _MasakYukAppState extends State<MasakYukApp> {
   late final RecipeRepository _repo;
   late final AuthProvider _auth;
   bool _splash = true;
+  int _tabAwal = 0; // tab setelah login (3 = Profil)
+
+  /// Tamu menekan "Masuk" di Profil: buka layar login, lalu kembali ke Profil.
+  void _masukDariProfil() {
+    setState(() => _tabAwal = 3);
+    _auth.logout();
+  }
+
+  void _keluar() {
+    setState(() => _tabAwal = 0);
+    _auth.logout();
+  }
 
   @override
   void initState() {
@@ -59,7 +71,10 @@ class _MasakYukAppState extends State<MasakYukApp> {
           return _auth.loggedIn
               ? HomeShell(
                   repo: _repo,
-                  onLogout: _auth.logout,
+                  initialTab: _tabAwal,
+                  isGuest: _auth.isGuest,
+                  onLogin: _masukDariProfil,
+                  onLogout: _keluar,
                 )
               : LoginScreen(
                   auth: _auth,
@@ -80,15 +95,24 @@ class _MasakYukAppState extends State<MasakYukApp> {
 /// Shell: 4 tab bawah sesuai desain (Home, Masak, Favorit, Profil).
 class HomeShell extends StatefulWidget {
   final RecipeRepository repo;
+  final int initialTab;
+  final bool isGuest;
+  final VoidCallback onLogin;
   final VoidCallback onLogout;
-  const HomeShell({super.key, required this.repo, required this.onLogout});
+  const HomeShell(
+      {super.key,
+      required this.repo,
+      this.initialTab = 0,
+      this.isGuest = false,
+      required this.onLogin,
+      required this.onLogout});
 
   @override
   State<HomeShell> createState() => _HomeShellState();
 }
 
 class _HomeShellState extends State<HomeShell> {
-  int _tab = 0;
+  late int _tab = widget.initialTab;
   // Diubah tiap tab Beranda diketuk ulang → HomeScreen dibangun fresh
   // (chip Semua, search kosong) sehingga selalu "kembali ke beranda".
   int _homeSalt = 0;
@@ -111,7 +135,10 @@ class _HomeShellState extends State<HomeShell> {
               onNeedLogin: widget.onLogout,
             ),
             ProfileScreen(
-                repo: widget.repo, onLogout: widget.onLogout),
+                repo: widget.repo,
+                onLogout: widget.onLogout,
+                isGuest: widget.isGuest,
+                onLogin: widget.onLogin),
           ],
         ),
       ),

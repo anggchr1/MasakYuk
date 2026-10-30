@@ -28,7 +28,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final _waktu = TextEditingController(text: '35');
   final _porsi = TextEditingController(text: '4');
   String _category = 'Tradisional';
-  String _difficulty = 'Sedang';
   bool _publish = true;
   bool _saving = false;
   final List<TextEditingController> _ings = [
@@ -45,8 +44,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     'Cepat & Mudah',
     'Seafood',
   ];
-  static const _difficulties = ['Mudah', 'Sedang', 'Mahir'];
-
   static const _catPhoto = {
     'Tradisional': 0,
     'Sarapan': 3,
@@ -71,7 +68,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     _title.text = e.title;
     _desc.text = e.description;
     _category = e.category;
-    _difficulty = e.difficulty ?? _difficulty;
     _publish = e.isPublished;
     final w =
         RegExp(r'(\d+)').firstMatch(e.durationText ?? '');
@@ -417,8 +413,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               Expanded(
                   child: _numberBox('Porsi', _porsi,
                       'orang', Icons.group)),
-              const SizedBox(width: 8),
-              Expanded(child: _levelBox()),
             ],
           ),
           const SizedBox(height: 16),
@@ -825,52 +819,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     );
   }
 
-  Widget _levelBox() {
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: const Color(0xFFDEC0B7)
-                .withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.tune,
-                  size: 14, color: AppColors.secondary),
-              SizedBox(width: 4),
-              Text('Tingkat',
-                  style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.secondary)),
-            ],
-          ),
-          DropdownButton<String>(
-            value: _difficulty,
-            underline: const SizedBox(),
-            isDense: true,
-            style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                color: AppColors.chocolate,
-                fontSize: 14),
-            items: _difficulties
-                .map((e) => DropdownMenuItem(
-                    value: e, child: Text(e)))
-                .toList(),
-            onChanged: (v) =>
-                setState(() => _difficulty = v!),
-          ),
-        ],
-      ),
-    );
-  }
-
   int? _priceValue() => int.tryParse(
       _price.text.replaceAll(RegExp(r'[^0-9]'), ''));
 
@@ -942,7 +890,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           publish: publish,
           description: _desc.text.trim(),
           durationText: '${_waktu.text.trim()} mnt',
-          difficulty: _difficulty,
           servings: '${_porsi.text.trim()} orang',
           estCostManual: manual,
         );
@@ -956,7 +903,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           publish: publish,
           description: _desc.text.trim(),
           durationText: '${_waktu.text.trim()} mnt',
-          difficulty: _difficulty,
           servings: '${_porsi.text.trim()} orang',
           estCostManual: manual,
         );
