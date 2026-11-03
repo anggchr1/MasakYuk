@@ -398,7 +398,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
                       ),
                       child: ClipOval(
                         child: AppImage(
-                          url: FoodPhotos.avatar,
+                          url: widget.repo.userAvatarUrl ??
+                              FoodPhotos.avatar,
                           fallbackLetter:
                               widget.repo.userName,
                         ),

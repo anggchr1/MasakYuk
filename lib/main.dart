@@ -75,6 +75,7 @@ class _MasakYukAppState extends State<MasakYukApp> {
                   isGuest: _auth.isGuest,
                   onLogin: _masukDariProfil,
                   onLogout: _keluar,
+                  onProfileSaved: _auth.simpanProfil,
                 )
               : LoginScreen(
                   auth: _auth,
@@ -99,13 +100,15 @@ class HomeShell extends StatefulWidget {
   final bool isGuest;
   final VoidCallback onLogin;
   final VoidCallback onLogout;
+  final Future<void> Function()? onProfileSaved;
   const HomeShell(
       {super.key,
       required this.repo,
       this.initialTab = 0,
       this.isGuest = false,
       required this.onLogin,
-      required this.onLogout});
+      required this.onLogout,
+      this.onProfileSaved});
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -138,7 +141,8 @@ class _HomeShellState extends State<HomeShell> {
                 repo: widget.repo,
                 onLogout: widget.onLogout,
                 isGuest: widget.isGuest,
-                onLogin: widget.onLogin),
+                onLogin: widget.onLogin,
+                onProfileSaved: widget.onProfileSaved),
           ],
         ),
       ),

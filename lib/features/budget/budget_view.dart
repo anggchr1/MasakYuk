@@ -264,7 +264,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                     ),
                     child: ClipOval(
                       child: AppImage(
-                        url: FoodPhotos.avatar,
+                        url: widget.repo.userAvatarUrl ?? FoodPhotos.avatar,
                         fallbackLetter:
                             widget.repo.userName,
                       ),

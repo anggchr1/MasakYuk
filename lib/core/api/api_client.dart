@@ -73,6 +73,22 @@ class ApiClient {
     return _decode(res);
   }
 
+  /// Unggah satu file (multipart) — dipakai foto resep & foto profil.
+  Future<dynamic> upload(
+    String path, {
+    required List<int> bytes,
+    required String filename,
+    String field = 'file',
+  }) async {
+    final req = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'))
+      ..headers.addAll(_headers)
+      ..files.add(http.MultipartFile.fromBytes(field, bytes, filename: filename));
+    final res = await http.Response.fromStream(
+      await _client.send(req).timeout(const Duration(seconds: 60)),
+    );
+    return _decode(res);
+  }
+
   dynamic _decode(http.Response res) {
     if (res.statusCode >= 400) {
       throw ApiException(res.statusCode, res.body);

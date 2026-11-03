@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masakyuk/data/api_recipe_source.dart';
+import 'package:masakyuk/data/recipe_photo.dart';
 
 void main() {
   test('toRecipe memetakan detail JSON API ke model Recipe', () {
@@ -54,6 +55,21 @@ void main() {
     expect(r.isPublished, isFalse);
     expect(r.origin, 'custom');
     expect(r.ownerId, '3');
+  });
+
+  test('foto unggahan dipakai sebagai photoUrl', () {
+    final api = ApiRecipeSource();
+    final r = api.toRecipe({
+      'id': 5,
+      'judul': 'Nasi Foto',
+      'gambar_utama': {
+        'url': 'https://res.cloudinary.com/demo/image/upload/nasi.jpg',
+      },
+    });
+
+    expect(r.photoUrl, 'https://res.cloudinary.com/demo/image/upload/nasi.jpg');
+    expect(photoFor(r), r.photoUrl);
+    expect(api.toRecipe({'id': 6, 'judul': 'Tanpa Foto'}).photoUrl, isNull);
   });
 
   test('bahanPayload memecah jumlah & satuan', () {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
+import '../../core/media/pilih_foto.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_feedback.dart';
 import '../../core/widgets/app_image.dart';
@@ -18,12 +20,14 @@ class ProfileScreen extends StatefulWidget {
   final VoidCallback onLogout;
   final bool isGuest;
   final VoidCallback? onLogin;
+  final Future<void> Function()? onProfileSaved;
   const ProfileScreen(
       {super.key,
       required this.repo,
       required this.onLogout,
       this.isGuest = false,
-      this.onLogin});
+      this.onLogin,
+      this.onProfileSaved});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -124,7 +128,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: IconButton(
                   icon: const Icon(Icons.settings_outlined,
                       color: Colors.white, size: 20),
-                  onPressed: _help,
+                  onPressed: _editProfil,
                 ),
               ),
             ],
@@ -156,7 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     child: ClipOval(
                       child: AppImage(
-                        url: FoodPhotos.avatar,
+                        url: widget.repo.userAvatarUrl ?? FoodPhotos.avatar,
                         fallbackLetter:
                             widget.repo.userName,
                       ),
@@ -840,6 +844,150 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  /// Edit nama + foto profil. Tamu diarahkan login dulu.
+  Future<void> _editProfil() async {
+    if (widget.isGuest) {
+      widget.onLogin?.call();
+      return;
+    }
+
+    final nama = TextEditingController(text: widget.repo.userName);
+    Uint8List? bytes;
+    var busy = false;
+
+    final simpan = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          Future<void> pilih() async {
+            final f = await pilihFoto(ctx, maxSide: 512);
+            if (f == null) return;
+            final b = await f.readAsBytes();
+            setSheet(() => bytes = b);
+          }
+
+          Future<void> kirim() async {
+            final n = nama.text.trim();
+            if (n.isEmpty) return;
+            setSheet(() => busy = true);
+            try {
+              int? fotoId;
+              String? fotoUrl;
+              if (bytes != null) {
+                final up = await widget.repo
+                    .uploadFoto(bytes!, filename: 'profil.jpg');
+                fotoId = up.id;
+                fotoUrl = up.url;
+              }
+              await widget.repo.api.put('/api/v1/saya', body: {
+                'nama_tampil': n,
+                'foto_id': ?fotoId,
+              });
+              widget.repo.userName = n;
+              if (fotoUrl != null) widget.repo.userAvatarUrl = fotoUrl;
+              await widget.onProfileSaved?.call();
+              widget.repo.profilDiperbarui();
+              if (ctx.mounted) Navigator.pop(ctx, true);
+            } catch (e) {
+              setSheet(() => busy = false);
+              if (ctx.mounted) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text('Gagal menyimpan profil: $e')));
+              }
+            }
+          }
+
+          final avatar = bytes != null
+              ? Image.memory(bytes!, fit: BoxFit.cover)
+              : AppImage(
+                  url: widget.repo.userAvatarUrl ?? FoodPhotos.avatar,
+                  fallbackLetter: widget.repo.userName);
+
+          return Padding(
+            padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 12,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.chocolateMuted
+                          .withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('Edit Profil',
+                    style: TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: AppColors.primary, width: 3),
+                      ),
+                      child: ClipOval(child: avatar),
+                    ),
+                    const SizedBox(width: 16),
+                    OutlinedButton.icon(
+                      onPressed: busy ? null : pilih,
+                      icon: const Icon(Icons.add_a_photo_outlined,
+                          size: 18),
+                      label: const Text('Ganti Foto'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nama,
+                  maxLength: 100,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Tampilan',
+                    helperText:
+                        'Email dari Google tidak bisa diubah di sini.',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: busy ? null : kirim,
+                    child: busy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Text('Simpan'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    if (simpan == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profil diperbarui.')));
+    }
   }
 
   void _help() {

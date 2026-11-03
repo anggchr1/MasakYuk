@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import '../../core/api/api_client.dart';
+import '../../core/media/pilih_foto.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_image.dart';
 import '../../data/food_photos.dart';
@@ -30,6 +32,10 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   String _category = 'Tradisional';
   bool _publish = true;
   bool _saving = false;
+  // Foto resep: bytes = belum diunggah, id = sudah ada di Cloudinary.
+  Uint8List? _fotoBytes;
+  String? _fotoUrl;
+  int? _gambarId;
   final List<TextEditingController> _ings = [
     TextEditingController(),
     TextEditingController(),
@@ -69,6 +75,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     _desc.text = e.description;
     _category = e.category;
     _publish = e.isPublished;
+    _fotoUrl = e.photoUrl;
     final w =
         RegExp(r'(\d+)').firstMatch(e.durationText ?? '');
     if (w != null) _waktu.text = w.group(1)!;
@@ -191,7 +198,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                               fontSize: 15,
                               fontWeight: FontWeight.w700)),
                       Text(
-                        'Foto hidangan disajikan otomatis berdasarkan kategori hidangan. Tak perlu repot memotret langkah di dapur yang berminyak!',
+                        'Ketuk tombol Foto untuk mengunggah foto hidanganmu (galeri/kamera). Tanpa foto, kami pilihkan sesuai kategori. Foto otomatis dikompres agar hemat kuota.',
                         style: TextStyle(
                             fontSize: 12,
                             height: 19.5 / 12,
@@ -212,9 +219,11 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                 child: SizedBox(
                   height: 176,
                   width: double.infinity,
-                  child: AppImage(
-                      url: preview,
-                      fallbackLetter: _category),
+                  child: _fotoBytes != null
+                      ? Image.memory(_fotoBytes!, fit: BoxFit.cover)
+                      : AppImage(
+                          url: _fotoUrl ?? preview,
+                          fallbackLetter: _category),
                 ),
               ),
               Positioned.fill(
@@ -258,7 +267,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                           color: AppColors.chocolate),
                       const SizedBox(width: 6),
                       Text(
-                        'Foto Kategori: $_category',
+                        _fotoBytes != null || _fotoUrl != null
+                            ? 'Foto Unggahanmu'
+                            : 'Foto Kategori: $_category',
                         style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -266,6 +277,34 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                             color: AppColors.chocolate),
                       ),
                     ],
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 12,
+                top: 12,
+                child: GestureDetector(
+                  onTap: _saving ? null : _pilihFoto,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(9999),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_a_photo_outlined,
+                            size: 14, color: Colors.white),
+                        SizedBox(width: 6),
+                        Text('Foto',
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white)),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -819,6 +858,19 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     );
   }
 
+  /// Pilih foto resep (galeri/kamera); sudah dikompres oleh plugin.
+  /// Unggahan ke Cloudinary baru dilakukan saat Simpan.
+  Future<void> _pilihFoto() async {
+    final f = await pilihFoto(context, maxSide: 1280);
+    if (f == null) return;
+    final bytes = await f.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _fotoBytes = bytes;
+      _gambarId = null;
+    });
+  }
+
   int? _priceValue() => int.tryParse(
       _price.text.replaceAll(RegExp(r'[^0-9]'), ''));
 
@@ -881,6 +933,11 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     });
     final manual = _priceValue();
     try {
+      if (_fotoBytes != null && _gambarId == null) {
+        final up = await widget.repo
+            .uploadFoto(_fotoBytes!, filename: 'resep.jpg');
+        _gambarId = up.id;
+      }
       if (ex == null) {
         await widget.repo.addCustom(
           title: _title.text.trim(),
@@ -892,6 +949,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           durationText: '${_waktu.text.trim()} mnt',
           servings: '${_porsi.text.trim()} orang',
           estCostManual: manual,
+          gambarUtamaId: _gambarId,
         );
       } else {
         await widget.repo.updateCustom(
@@ -905,6 +963,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           durationText: '${_waktu.text.trim()} mnt',
           servings: '${_porsi.text.trim()} orang',
           estCostManual: manual,
+          gambarUtamaId: _gambarId,
         );
       }
       navigator.pop();

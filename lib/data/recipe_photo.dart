@@ -2,8 +2,9 @@ import '../models/recipe.dart';
 import 'food_photos.dart';
 
 /// Pilih foto Stitch berdasarkan bahan/kategori. Deterministik per resep.
-/// NANTI: ganti dengan foto upload user (Storage) bila ada.
+/// Resep dengan foto unggahan sendiri selalu didahulukan.
 String photoFor(Recipe r) {
+  if (r.photoUrl != null && r.photoUrl!.isNotEmpty) return r.photoUrl!;
   final blob =
       '${r.title} ${r.ingredientsKeywords.join(' ')} ${r.category}'.toLowerCase();
   bool has(List<String> ks) => ks.any(blob.contains);

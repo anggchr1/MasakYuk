@@ -47,6 +47,7 @@ class ApiRecipeSource {
     int? porsi,
     int? waktuMasak,
     int? hargaResep,
+    int? gambarUtamaId,
   }) async {
     final res = await api.post(
       '/api/v1/resep',
@@ -59,6 +60,7 @@ class ApiRecipeSource {
         porsi: porsi,
         waktuMasak: waktuMasak,
         hargaResep: hargaResep,
+        gambarUtamaId: gambarUtamaId,
       ),
     );
     return toRecipe((res as Map).cast<String, dynamic>(), mine: true);
@@ -75,6 +77,7 @@ class ApiRecipeSource {
     int? porsi,
     int? waktuMasak,
     int? hargaResep,
+    int? gambarUtamaId,
   }) async {
     final res = await api.put(
       '/api/v1/resep/$id',
@@ -87,6 +90,7 @@ class ApiRecipeSource {
         porsi: porsi,
         waktuMasak: waktuMasak,
         hargaResep: hargaResep,
+        gambarUtamaId: gambarUtamaId,
       ),
     );
     return toRecipe((res as Map).cast<String, dynamic>(), mine: true);
@@ -113,6 +117,7 @@ class ApiRecipeSource {
     required int? porsi,
     required int? waktuMasak,
     required int? hargaResep,
+    int? gambarUtamaId,
   }) async {
     final kategoriId = await _kategoriId(kategori);
     return {
@@ -121,6 +126,7 @@ class ApiRecipeSource {
       'porsi': ?porsi,
       'waktu_masak': ?waktuMasak,
       'harga_resep': ?hargaResep,
+      'gambar_utama_id': ?gambarUtamaId,
       if (kategoriId != null) 'kategori_ids': [kategoriId],
       'bahan': bahan.map(bahanPayload).toList(),
       'langkah': langkah.map((s) => {'instruksi': s}).toList(),
@@ -236,6 +242,7 @@ class ApiRecipeSource {
       servings: j['porsi'] == null ? null : '${j['porsi']} Porsi',
       estCostManual: (j['harga_resep'] as num?)?.toInt(),
       createdAt: DateTime.tryParse((j['created_at'] ?? '').toString()),
+      photoUrl: ((j['gambar_utama'] as Map?)?['url'])?.toString(),
     );
   }
 

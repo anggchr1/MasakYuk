@@ -42,6 +42,7 @@ class AuthProvider extends ChangeNotifier {
   static const _kKedaluwarsa = 'sesi.kedaluwarsa';
   static const _kNama = 'sesi.nama';
   static const _kSurel = 'sesi.surel';
+  static const _kFoto = 'sesi.foto';
 
   /// Dipanggil sekali saat app dibuka.
   Future<void> muatSesi() async {
@@ -57,7 +58,9 @@ class AuthProvider extends ChangeNotifier {
         api.token = token;
         repo.userName = p.getString(_kNama) ?? 'Sobat MasakYuk';
         repo.userEmail = p.getString(_kSurel) ?? '';
+        repo.userAvatarUrl = p.getString(_kFoto);
         loggedIn = true;
+        _refreshProfil(); // nama/foto terbaru dari server (gagal = pakai cache)
       } else if (token != null) {
         await p.clear(); // sesi lewat masa berlaku
       }
@@ -108,6 +111,7 @@ class AuthProvider extends ChangeNotifier {
           (pengguna['nama_tampil'] ?? akun.displayName ?? 'Sobat MasakYuk')
               .toString();
       repo.userEmail = (pengguna['surel'] ?? akun.email ?? '').toString();
+      repo.userAvatarUrl = ((pengguna['foto'] as Map?)?['url'])?.toString();
       isGuest = false;
       loggedIn = true;
       await _simpanSesi(token);
@@ -150,8 +154,34 @@ class AuthProvider extends ChangeNotifier {
       _kKedaluwarsa,
       DateTime.now().add(masaBerlaku).millisecondsSinceEpoch,
     );
+    await simpanProfil();
+  }
+
+  /// Simpan nama/foto profil terbaru (dipanggil setelah edit profil).
+  Future<void> simpanProfil() async {
+    final p = await SharedPreferences.getInstance();
     await p.setString(_kNama, repo.userName);
     await p.setString(_kSurel, repo.userEmail);
+    final foto = repo.userAvatarUrl;
+    if (foto == null || foto.isEmpty) {
+      await p.remove(_kFoto);
+    } else {
+      await p.setString(_kFoto, foto);
+    }
+  }
+
+  /// Ambil nama/foto terbaru dari server setelah sesi dipulihkan.
+  Future<void> _refreshProfil() async {
+    try {
+      final j = (await api.get('/api/v1/saya') as Map).cast<String, dynamic>();
+      repo.userName = (j['nama_tampil'] ?? repo.userName).toString();
+      repo.userEmail = (j['surel'] ?? repo.userEmail).toString();
+      repo.userAvatarUrl = ((j['foto'] as Map?)?['url'])?.toString();
+      await simpanProfil();
+      notifyListeners();
+    } catch (_) {
+      // Offline / server mati: tetap pakai data cache di perangkat.
+    }
   }
 
   Future<void> _hapusSesi() async {
@@ -160,6 +190,7 @@ class AuthProvider extends ChangeNotifier {
     await p.remove(_kKedaluwarsa);
     await p.remove(_kNama);
     await p.remove(_kSurel);
+    await p.remove(_kFoto);
   }
 
   String _pesan(Object e) {

@@ -25,6 +25,7 @@ class Recipe {
   final String? servings; // cth "3-4 Porsi"
   final int? estCostManual; // input user (Rp total), null = hitung tabel
   final DateTime? createdAt; // resep custom (untuk purge draf lama)
+  final String? photoUrl; // foto unggahan user (Cloudinary); null = foto kategori
 
   const Recipe({
     required this.docId,
@@ -50,6 +51,7 @@ class Recipe {
     this.servings,
     this.estCostManual,
     this.createdAt,
+    this.photoUrl,
   });
 
   static List<String> _strList(dynamic v) =>
@@ -87,6 +89,7 @@ class Recipe {
       createdAt: j['createdAt'] == null
           ? null
           : DateTime.tryParse(j['createdAt'] as String),
+      photoUrl: ((j['gambar_utama'] as Map?)?['url'])?.toString(),
     );
   }
 

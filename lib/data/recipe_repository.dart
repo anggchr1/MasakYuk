@@ -30,6 +30,7 @@ class RecipeRepository extends ChangeNotifier {
   // Akun mock — NANTI: FirebaseAuth.currentUser (M2)
   String userName = 'Sobat MasakYuk';
   String userEmail = 'sobat@masakyuk.id';
+  String? userAvatarUrl; // foto profil di Cloudinary; null = avatar bawaan
 
   List<Recipe> get customs => List.unmodifiable(_custom);
   bool isFavorite(String docId) => _favorites.contains(docId);
@@ -299,6 +300,25 @@ class RecipeRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Beri tahu UI setelah nama/foto profil diganti dari layar Profil.
+  void profilDiperbarui() => notifyListeners();
+
+  /// Unggah foto (sudah dikompres di sisi pemilih foto) ke Cloudinary
+  /// lewat backend. Hasil: id media untuk disimpan + URL untuk ditampilkan.
+  Future<({int id, String url})> uploadFoto(
+    List<int> bytes, {
+    String filename = 'foto.jpg',
+  }) async {
+    final res = (await api.upload('/api/v1/media',
+            bytes: bytes, filename: filename)
+        as Map)
+        .cast<String, dynamic>();
+    return (
+      id: (res['id'] as num).toInt(),
+      url: (res['url'] ?? '').toString(),
+    );
+  }
+
   /// Simpan resep baru ke akun yang login; terbitkan bila [publish].
   Future<void> addCustom({
     required String title,
@@ -310,6 +330,7 @@ class RecipeRepository extends ChangeNotifier {
     String? durationText,
     String? servings,
     int? estCostManual,
+    int? gambarUtamaId,
   }) async {
     var r = await _apiResep.create(
       judul: title,
@@ -320,6 +341,7 @@ class RecipeRepository extends ChangeNotifier {
       porsi: _angkaAwal(servings),
       waktuMasak: _angkaAwal(durationText),
       hargaResep: estCostManual,
+      gambarUtamaId: gambarUtamaId,
     );
     if (publish) r = await _apiResep.publish(r.docId);
     _custom.insert(0, r);
@@ -345,6 +367,7 @@ class RecipeRepository extends ChangeNotifier {
     String? durationText,
     String? servings,
     int? estCostManual,
+    int? gambarUtamaId,
   }) async {
     var r = await _apiResep.update(
       docId,
@@ -356,6 +379,7 @@ class RecipeRepository extends ChangeNotifier {
       porsi: _angkaAwal(servings),
       waktuMasak: _angkaAwal(durationText),
       hargaResep: estCostManual,
+      gambarUtamaId: gambarUtamaId,
     );
     if (publish != r.isPublished) {
       r = publish
@@ -415,6 +439,7 @@ class RecipeRepository extends ChangeNotifier {
   void logout() {
     _custom.clear();
     _favorites.clear();
+    userAvatarUrl = null;
     notifyListeners();
   }
 }
