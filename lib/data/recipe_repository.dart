@@ -22,10 +22,11 @@ class RecipeRepository extends ChangeNotifier {
   final List<Map<String, dynamic>> _prices = [];
   final List<IngredientInfo> encyclopedia = [];
   final List<PlaceInfo> places = [];
-  final Map<String, List<CommentItem>> _comments = {};
-  final Map<String, Map<String, int>> _ratings = {};
   final List<NotifItem> notifs = [];
   bool loaded = false;
+
+  /// Diisi `main` untuk layar yang butuh login (mis. beri ulasan).
+  VoidCallback? onNeedLogin;
 
   // Akun mock — NANTI: FirebaseAuth.currentUser (M2)
   String userName = 'Sobat MasakYuk';
@@ -192,37 +193,23 @@ class RecipeRepository extends ChangeNotifier {
     return _pool.where((r) => r.title.toLowerCase().contains(s)).toList();
   }
 
-  // ---------- Komentar & rating (1 user 1 rating aktif) ----------
-  List<CommentItem> commentsFor(String docId) =>
-      List.unmodifiable(_comments[docId] ?? []);
+  // ---------- Ulasan & rating (tersimpan di server) ----------
 
-  void addComment(String docId, String text) {
-    final list = _comments.putIfAbsent(docId, () => []);
-    list.add(CommentItem(
-        user: userName, text: text, at: DateTime.now()));
-    notifyListeners();
-  }
+  /// Ulasan + ringkasan rating sebuah resep.
+  Future<Map<String, dynamic>> ulasanResep(String docId) async =>
+      (await api.get('/api/v1/resep/$docId/komentar') as Map)
+          .cast<String, dynamic>();
 
-  void setRating(String docId, int stars, String title) {
-    final m = _ratings.putIfAbsent(docId, () => {});
-    m[userName] = stars.clamp(1, 5);
-    pushNotif(
-      kind: 'rating',
-      title: 'Bintang $stars untuk "$title"',
-      desc: 'Terima kasih atas penilaianmu!',
-      recipeId: docId,
-    );
-    notifyListeners();
-  }
+  Future<Map<String, dynamic>> beriNilai(String docId, int skor) async =>
+      (await api.post('/api/v1/resep/$docId/nilai', body: {'skor': skor})
+              as Map)
+          .cast<String, dynamic>();
 
-  double avgRating(String docId) {
-    final m = _ratings[docId];
-    if (m == null || m.isEmpty) return 0;
-    return m.values.reduce((a, b) => a + b) / m.length;
-  }
-
-  int ratingCount(String docId) => _ratings[docId]?.length ?? 0;
-  int myRating(String docId) => _ratings[docId]?[userName] ?? 0;
+  /// Satu ulasan per akun per resep (aturan server).
+  Future<Map<String, dynamic>> kirimUlasan(String docId, String isi) async =>
+      (await api.post('/api/v1/resep/$docId/komentar', body: {'isi': isi})
+              as Map)
+          .cast<String, dynamic>();
 
   // ---------- Notifikasi in-app ----------
   int get unreadCount => notifs.where((n) => !n.read).length;

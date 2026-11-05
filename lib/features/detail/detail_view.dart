@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import '../../core/api/api_client.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_feedback.dart';
 import '../../core/widgets/app_image.dart';
@@ -33,11 +34,100 @@ class _DetailScreenState extends State<DetailScreen> {
   final _shot = ScreenshotController();
   final _cmt = TextEditingController();
   bool _bahanOpen = true;
+  List<Map<String, dynamic>> _ulasan = [];
+  double _rata = 0;
+  int _jumlah = 0;
+  int _nilaiSaya = 0;
+  bool _pemilik = false;
+  bool _kirim = false;
 
   @override
   void initState() {
     super.initState();
     _dp = DetailProvider();
+    _pemilik = widget.recipe.origin == 'custom';
+    _muatUlasan();
+  }
+
+  /// Ambil semua ulasan + ringkasan rating dari server.
+  Future<void> _muatUlasan() async {
+    try {
+      final j = await widget.repo.ulasanResep(widget.recipe.docId);
+      if (!mounted) return;
+      setState(() {
+        _ulasan = ((j['data'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>();
+        _rata = (j['rating_rata'] as num?)?.toDouble() ?? 0;
+        _jumlah = (j['jumlah_penilaian'] as num?)?.toInt() ?? 0;
+        _nilaiSaya = (j['nilai_saya'] as num?)?.toInt() ?? 0;
+        _pemilik = j['pemilik_saya'] == true || _pemilik;
+      });
+    } catch (_) {
+      // Draf / offline: bagian ulasan tetap kosong.
+    }
+  }
+
+  /// Ulasan & rating wajib login; tamu diarahkan ke layar masuk.
+  bool _cekLogin() {
+    if (widget.repo.api.token != null) return true;
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    widget.repo.onNeedLogin?.call();
+    return false;
+  }
+
+  Future<void> _nilai(int skor) async {
+    if (!_cekLogin()) return;
+    try {
+      final j = await widget.repo.beriNilai(widget.recipe.docId, skor);
+      if (!mounted) return;
+      setState(() {
+        _nilaiSaya = skor;
+        _rata = (j['rating_rata'] as num?)?.toDouble() ?? _rata;
+        _jumlah = (j['jumlah_penilai'] as num?)?.toInt() ?? _jumlah;
+      });
+      AppToast.show(
+        context,
+        'Bintang $skor tersimpan!',
+        'Terima kasih atas penilaianmu.',
+        icon: Icons.star,
+      );
+    } catch (e) {
+      if (mounted) _gagal(e);
+    }
+  }
+
+  Future<void> _kirimUlasan() async {
+    final t = _cmt.text.trim();
+    if (t.isEmpty || !_cekLogin()) return;
+    setState(() => _kirim = true);
+    try {
+      await widget.repo.kirimUlasan(widget.recipe.docId, t);
+      _cmt.clear();
+      await _muatUlasan();
+      if (!mounted) return;
+      AppToast.show(
+        context,
+        'Ulasan terkirim!',
+        'Ulasanmu tampil di daftar bawah.',
+        icon: Icons.chat_bubble,
+      );
+    } catch (e) {
+      if (mounted) _gagal(e);
+    } finally {
+      if (mounted) setState(() => _kirim = false);
+    }
+  }
+
+  void _gagal(Object e) {
+    final pesan = e is ApiException
+        ? switch (e.status) {
+            401 => 'Masuk dulu untuk memberi rating/ulasan.',
+            403 => 'Pembuat resep tidak bisa menilai resepnya sendiri.',
+            409 => 'Kamu sudah memberi ulasan untuk resep ini.',
+            _ => 'Server menolak (${e.status}).',
+          }
+        : 'Periksa koneksi ke server.';
+    AppToast.show(context, 'Gagal', pesan, icon: Icons.error_outline);
   }
 
   @override
@@ -185,7 +275,7 @@ class _DetailScreenState extends State<DetailScreen> {
                       ),
                       const SizedBox(height: 12),
                       _metaBar(r.displayDuration,
-                          _ratingText(r)),
+                          _ratingText()),
                       const SizedBox(height: 12),
                       _priceBox(e.min, e.max, e.complete),
                       const SizedBox(height: 10),
@@ -396,10 +486,9 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   /// Bar WAKTU + KESULITAN ala Figma: pil sand berisi dua grup + divider.
-  String _ratingText(Recipe r) {
-    final cnt = widget.repo.ratingCount(r.docId);
-    if (cnt == 0) return '-';
-    return '${widget.repo.avgRating(r.docId).toStringAsFixed(1)} ($cnt)';
+  String _ratingText() {
+    if (_jumlah == 0) return '-';
+    return '${_rata.toStringAsFixed(1)} ($_jumlah)';
   }
 
   Widget _metaBar(String waktu, String rating) {
@@ -601,32 +690,27 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   Widget _comments() {
-    final r = widget.recipe;
-    final list = widget.repo.commentsFor(r.docId);
-    final avg = widget.repo.avgRating(r.docId);
-    final cnt = widget.repo.ratingCount(r.docId);
-    final mine = widget.repo.myRating(r.docId);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-          Row(
-            children: [
-              const Text('Ulasan Dapur',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.chocolate)),
-              const Spacer(),
-              Text(
-                  cnt > 0
-                      ? '${avg.toStringAsFixed(1)} ($cnt ulasan)'
-                      : 'Belum ada rating',
-                  style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.chocolateMuted)),
-            ],
-          ),
+        Row(
+          children: [
+            const Text('Ulasan Dapur',
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.chocolate)),
+            const Spacer(),
+            Text(
+                _jumlah > 0
+                    ? '${_rata.toStringAsFixed(1)} ($_jumlah ulasan)'
+                    : 'Belum ada rating',
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.chocolateMuted)),
+          ],
+        ),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(16),
@@ -637,39 +721,37 @@ class _DetailScreenState extends State<DetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Text('Beri Bintang Resep:',
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.chocolate)),
-                  const Spacer(),
-                  ...List.generate(
-                      5,
-                      (i) => IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints:
-                                const BoxConstraints(),
-                            icon: Icon(
-                              i < mine
-                                  ? Icons.star
-                                  : Icons.star_border,
-                              color: AppColors.amber,
-                            ),
-                            onPressed: () {
-                              widget.repo.setRating(
-                                  r.docId, i + 1, r.title);
-                              AppToast.show(
-                                context,
-                                'Bintang ${i + 1} tersimpan!',
-                                'Terima kasih atas penilaianmu.',
-                                icon: Icons.star,
-                              );
-                            },
-                          )),
-                ],
-              ),
+              if (_pemilik)
+                const Text(
+                    'Kamu pembuat resep ini. Kamu bisa melihat semua '
+                    'ulasan & rating, tapi tidak bisa menilainya sendiri.',
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.chocolateMuted))
+              else
+                Row(
+                  children: [
+                    const Text('Beri Bintang Resep:',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.chocolate)),
+                    const Spacer(),
+                    ...List.generate(
+                        5,
+                        (i) => IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              icon: Icon(
+                                i < _nilaiSaya
+                                    ? Icons.star
+                                    : Icons.star_border,
+                                color: AppColors.amber,
+                              ),
+                              onPressed: () => _nilai(i + 1),
+                            )),
+                  ],
+                ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.only(top: 13),
@@ -681,119 +763,122 @@ class _DetailScreenState extends State<DetailScreen> {
                   ),
                 ),
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (list.isEmpty)
-                      const Text(
-                          'Belum ada ulasan. Jadilah yang pertama!',
+                    if (_ulasan.isEmpty)
+                      const Text('Belum ada ulasan. Jadilah yang pertama!',
                           style: TextStyle(
                               fontSize: 13,
-                              color: AppColors
-                                  .chocolateMuted)),
-                    ...list.take(1).map((c) => Container(
-                          padding:
-                              const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius:
-                                BorderRadius.circular(
-                                    16),
-                          ),
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 14,
-                                    backgroundColor:
-                                        AppColors.secondary,
-                                    child: Text(
-                                        c.user.isEmpty
-                                            ? '?'
-                                            : c.user[0]
-                                                .toUpperCase(),
-                                        style:
-                                            const TextStyle(
-                                                color: Colors
-                                                    .white,
-                                                fontSize: 12,
-                                                fontWeight:
-                                                    FontWeight
-                                                        .w700)),
-                                  ),
-                                  const SizedBox(
-                                      width: 8),
-                                  Expanded(
-                                    child: Text(c.user,
-                                        style:
-                                            const TextStyle(
-                                                fontWeight:
-                                                    FontWeight
-                                                        .w700,
-                                                fontSize:
-                                                    13)),
-                                  ),
-                                  Text(
-                                    timeago.format(c.at,
-                                        locale: 'id'),
-                                    style: const TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors
-                                            .chocolateMuted),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(c.text,
-                                  style: const TextStyle(
-                                      fontSize: 13)),
-                            ],
-                          ),
-                        )),
+                              color: AppColors.chocolateMuted)),
+                    ..._ulasan.map(_kartuUlasan),
                   ],
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _cmt,
-                decoration: const InputDecoration(
-                    hintText: 'Tulis ulasanmu...'),
+        if (!_pemilik) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _cmt,
+                  maxLength: 2000,
+                  decoration: const InputDecoration(
+                      hintText: 'Tulis ulasanmu...',
+                      counterText: ''),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            CircleAvatar(
-              backgroundColor: AppColors.primary,
-              child: IconButton(
-                icon: const Icon(Icons.send,
-                    color: Colors.white, size: 18),
-                onPressed: () {
-                  final t = _cmt.text.trim();
-                  if (t.isEmpty) return;
-                  widget.repo
-                      .addComment(r.docId, t);
-                  _cmt.clear();
-                  AppToast.show(
-                    context,
-                    'Ulasan terkirim!',
-                    'Komentar tampil di bawah.',
-                    icon: Icons.chat_bubble,
-                  );
-                },
+              const SizedBox(width: 8),
+              CircleAvatar(
+                backgroundColor: AppColors.primary,
+                child: _kirim
+                    ? const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white)),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.send,
+                            color: Colors.white, size: 18),
+                        onPressed: _kirimUlasan,
+                      ),
               ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _kartuUlasan(Map<String, dynamic> u) {
+    final nama =
+        ((u['pengguna'] as Map?)?['nama_tampil'] ?? 'Pengguna').toString();
+    final skor = (u['skor'] as num?)?.toInt() ?? 0;
+    final waktu = DateTime.tryParse((u['created_at'] ?? '').toString());
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: AppColors.secondary,
+                child: Text(
+                    nama.isEmpty ? '?' : nama[0].toUpperCase(),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(nama,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 13)),
+              ),
+              if (waktu != null)
+                Text(timeago.format(waktu, locale: 'id'),
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.chocolateMuted)),
+            ],
+          ),
+          if (skor > 0) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                ...List.generate(
+                    5,
+                    (i) => Icon(
+                          i < skor ? Icons.star : Icons.star_border,
+                          size: 14,
+                          color: AppColors.amber,
+                        )),
+                const SizedBox(width: 4),
+                Text('$skor/5',
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.chocolateMuted)),
+              ],
             ),
           ],
-        ),
-      ],
+          const SizedBox(height: 6),
+          Text((u['isi'] ?? '').toString(),
+              style: const TextStyle(fontSize: 13)),
+        ],
+      ),
     );
   }
 

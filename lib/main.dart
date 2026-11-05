@@ -44,6 +44,7 @@ class _MasakYukAppState extends State<MasakYukApp> {
   void initState() {
     super.initState();
     _repo = RecipeRepository();
+    _repo.onNeedLogin = _masukDariProfil;
     _auth = AuthProvider(_repo);
     _repo.load(); // NANTI M2: + Firebase.initializeApp + Auth gate
     _auth.muatSesi().then((_) {
