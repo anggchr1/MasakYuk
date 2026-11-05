@@ -11,25 +11,20 @@ class ApiRecipeSource {
 
   Future<List<Recipe>> fetchAll() async {
     final index = await api.get('/api/v1/resep');
-    return _details(index);
+    return _list(index);
   }
 
-  /// Resep milik sendiri, termasuk draf (butuh token).
+  /// Resep milik sendiri, termasuk draf & terbit (butuh token).
   Future<List<Recipe>> fetchMine() async {
     final index = await api.get('/api/v1/resep', query: {'milik': 'saya'});
-    return _details(index, mine: true);
+    return _list(index, mine: true);
   }
 
-  Future<List<Recipe>> _details(dynamic index, {bool mine = false}) async {
+  /// Satu request list sudah membawa bahan/langkah; tanpa N+1 detail.
+  List<Recipe> _list(dynamic index, {bool mine = false}) {
     final items =
         ((index['data'] as List?) ?? const []).cast<Map<String, dynamic>>();
-    final details = await Future.wait(
-      items.map((e) => api.get('/api/v1/resep/${e['id']}')),
-    );
-    return details
-        .whereType<Map<String, dynamic>>()
-        .map((j) => toRecipe(j, mine: mine))
-        .toList();
+    return items.map((e) => toRecipe(e, mine: mine)).toList();
   }
 
   Future<Recipe> fetchOne(String id) async {
