@@ -148,6 +148,19 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Hapus akun di server (lunak + cabut token), lalu bersihkan sesi lokal.
+  Future<void> hapusAkun() async {
+    await api.delete('/api/v1/saya');
+    api.token = null;
+    repo.logout();
+    repo.muatUlangPublik();
+    loggedIn = false;
+    isGuest = false;
+    error = null;
+    await _hapusSesi();
+    notifyListeners();
+  }
+
   Future<void> _simpanSesi(String token) async {
     final p = await SharedPreferences.getInstance();
     await p.setString(_kToken, token);
@@ -196,7 +209,12 @@ class AuthProvider extends ChangeNotifier {
 
   String _pesan(Object e) {
     if (e is String) return e;
-    if (e is ApiException) return 'Gagal masuk (${e.status}). Coba lagi.';
+    if (e is ApiException) {
+      if (e.status == 403 && e.body.contains('dihapus')) {
+        return 'Akun ini sudah dihapus.';
+      }
+      return 'Gagal masuk (${e.status}). Coba lagi.';
+    }
     if (e is PlatformException) {
       // v6: DEVELOPER_ERROR = client Android (package + SHA-1) belum terdaftar.
       if (e.message?.contains('10:') ?? false) {

@@ -185,7 +185,7 @@ class _DetailScreenState extends State<DetailScreen> {
                       ),
                       const SizedBox(height: 12),
                       _metaBar(r.displayDuration,
-                          r.displayDifficulty),
+                          _ratingText(r)),
                       const SizedBox(height: 12),
                       _priceBox(e.min, e.max, e.complete),
                       const SizedBox(height: 10),
@@ -396,7 +396,13 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   /// Bar WAKTU + KESULITAN ala Figma: pil sand berisi dua grup + divider.
-  Widget _metaBar(String waktu, String sulit) {
+  String _ratingText(Recipe r) {
+    final cnt = widget.repo.ratingCount(r.docId);
+    if (cnt == 0) return '-';
+    return '${widget.repo.avgRating(r.docId).toStringAsFixed(1)} ($cnt)';
+  }
+
+  Widget _metaBar(String waktu, String rating) {
     Widget group(IconData icon, String label, String value) {
       return Expanded(
         child: Row(
@@ -449,7 +455,7 @@ class _DetailScreenState extends State<DetailScreen> {
             color: const Color(0xFFDEC0B7)
                 .withValues(alpha: 0.6),
           ),
-          group(Icons.bar_chart, 'KESULITAN', sulit),
+          group(Icons.star_rounded, 'RATING', rating),
         ],
       ),
     );

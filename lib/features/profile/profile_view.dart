@@ -21,13 +21,15 @@ class ProfileScreen extends StatefulWidget {
   final bool isGuest;
   final VoidCallback? onLogin;
   final Future<void> Function()? onProfileSaved;
+  final Future<void> Function()? onHapusAkun;
   const ProfileScreen(
       {super.key,
       required this.repo,
       required this.onLogout,
       this.isGuest = false,
       this.onLogin,
-      this.onProfileSaved});
+      this.onProfileSaved,
+      this.onHapusAkun});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -106,7 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Row(
             children: [
-              const Text('Halo MasakMania',
+              const Text('Halo MasakYuk!',
                   style: TextStyle(
                       color: Color(0xFFFFB59C),
                       fontSize: 12,
@@ -128,7 +130,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: IconButton(
                   icon: const Icon(Icons.settings_outlined,
                       color: Colors.white, size: 20),
-                  onPressed: _editProfil,
+                  onPressed: _pengaturan,
                 ),
               ),
             ],
@@ -987,6 +989,138 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (simpan == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profil diperbarui.')));
+    }
+  }
+
+  /// Gerigi: pilih Edit Profil atau Informasi Akun.
+  Future<void> _pengaturan() async {
+    if (widget.isGuest) {
+      widget.onLogin?.call();
+      return;
+    }
+    final pilihan = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Edit Profil'),
+              subtitle: const Text('Ubah nama & foto profil'),
+              onTap: () => Navigator.pop(ctx, 'edit'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.badge_outlined),
+              title: const Text('Informasi Akun'),
+              subtitle: const Text('Email & hapus akun'),
+              onTap: () => Navigator.pop(ctx, 'info'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (pilihan == 'edit') await _editProfil();
+    if (pilihan == 'info') await _infoAkun();
+  }
+
+  Future<void> _infoAkun() async {
+    final hapus = await showModalBottomSheet<bool>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  ClipOval(
+                    child: SizedBox(
+                      width: 56,
+                      height: 56,
+                      child: AppImage(
+                        url: widget.repo.userAvatarUrl ??
+                            FoodPhotos.avatar,
+                        fallbackLetter: widget.repo.userName,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(widget.repo.userName,
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700)),
+                        Text(widget.repo.userEmail,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.chocolateMuted)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Text('Masuk dengan akun Google ini.',
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.chocolateMuted)),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Hapus Akun'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (hapus == true && mounted) await _konfirmasiHapus();
+  }
+
+  Future<void> _konfirmasiHapus() async {
+    final ya = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('Hapus akun?'),
+        content: const Text(
+            'Akun ini akan dihapus dan kamu otomatis keluar. '
+            'Tindakan ini tidak bisa dibatalkan.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(d, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(d, true),
+            child: const Text('Hapus',
+                style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (ya != true || !mounted) return;
+    try {
+      await widget.onHapusAkun?.call();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menghapus akun: $e')));
     }
   }
 

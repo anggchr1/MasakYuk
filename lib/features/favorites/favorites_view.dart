@@ -223,7 +223,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Dapur MasakMania',
+                    Text('Dapur MasakYuk!',
                         style: TextStyle(
                             color: Color(0xFFFFB59C),
                             fontSize: 12,
