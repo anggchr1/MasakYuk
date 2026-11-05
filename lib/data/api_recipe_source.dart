@@ -240,11 +240,16 @@ class ApiRecipeSource {
       durationText:
           j['waktu_masak'] == null ? null : '${j['waktu_masak']} mnt',
       servings: j['porsi'] == null ? null : '${j['porsi']} Porsi',
-      estCostManual: (j['harga_resep'] as num?)?.toInt(),
+      // harga_resep dikirim Laravel sebagai string ("10000.00").
+      estCostManual: _toInt(j['harga_resep']),
       createdAt: DateTime.tryParse((j['created_at'] ?? '').toString()),
       photoUrl: ((j['gambar_utama'] as Map?)?['url'])?.toString(),
     );
   }
+
+  /// Terima angka atau string dari API (decimal Laravel = string).
+  int? _toInt(dynamic v) =>
+      v == null ? null : num.tryParse(v.toString())?.toInt();
 
   String _bahanText(Map<String, dynamic> b) {
     final qty = _angka(b['jumlah']);

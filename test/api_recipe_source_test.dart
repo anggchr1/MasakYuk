@@ -72,6 +72,20 @@ void main() {
     expect(api.toRecipe({'id': 6, 'judul': 'Tanpa Foto'}).photoUrl, isNull);
   });
 
+  test('harga_resep string dari API tetap terbaca sebagai angka', () {
+    final r = ApiRecipeSource().toRecipe({
+      'id': 7,
+      'judul': 'Nasgor',
+      'status': 'draf',
+      'porsi': 4,
+      'waktu_masak': 35,
+      'harga_resep': '10000.00',
+    }, mine: true);
+
+    expect(r.estCostManual, 10000);
+    expect(r.isPublished, isFalse);
+  });
+
   test('bahanPayload memecah jumlah & satuan', () {
     final api = ApiRecipeSource();
     expect(api.bahanPayload('2 siung bawang putih'),
