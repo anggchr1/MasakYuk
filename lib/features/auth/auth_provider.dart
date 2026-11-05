@@ -140,6 +140,7 @@ class AuthProvider extends ChangeNotifier {
     }
     api.token = null;
     repo.logout();
+    repo.muatUlangPublik(); // daftar tamu memuat resep yang baru terbit
     loggedIn = false;
     isGuest = false;
     error = null;

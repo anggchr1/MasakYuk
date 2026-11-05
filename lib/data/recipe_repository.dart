@@ -64,6 +64,20 @@ class RecipeRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Muat ulang resep publik (tanpa token) — dipakai setelah logout
+  /// supaya resep yang baru diterbitkan tetap tampil untuk tamu.
+  Future<void> muatUlangPublik() async {
+    try {
+      final hasil = await _apiResep.fetchAll();
+      _system
+        ..clear()
+        ..addAll(hasil);
+    } catch (e) {
+      debugPrint('Gagal memuat resep publik: $e');
+    }
+    notifyListeners();
+  }
+
   Future<void> load() async {
     if (loaded) return;
     Future<List> loadJson(String p) async =>
