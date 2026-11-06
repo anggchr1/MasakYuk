@@ -21,11 +21,26 @@ class FavoritesScreen extends StatefulWidget {
   State<FavoritesScreen> createState() => _FavoritesScreenState();
 }
 
-class _FavoritesScreenState extends State<FavoritesScreen> {
+class _FavoritesScreenState extends State<FavoritesScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
   bool _mine = false;
   bool _manage = false;
   String _sort = 'Terbaru Disimpan';
   final _ctrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
+  }
+
   static const _sorts = [
     'Terbaru Disimpan',
     'Waktu Tersingkat',
@@ -35,8 +50,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.repo,
+    return FadeTransition(
+      opacity: _fade,
+      child: AnimatedBuilder(
+        animation: widget.repo,
       builder: (_, _) {
         final favs = widget.repo.favorites;
         final mine = widget.repo.customs;
@@ -170,6 +187,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ),
         );
       },
+      ),
     );
   }
 
@@ -524,6 +542,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   @override
   void dispose() {
+    _controller.dispose();
     _ctrl.dispose();
     super.dispose();
   }

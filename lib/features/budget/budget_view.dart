@@ -21,7 +21,10 @@ class BudgetScreen extends StatefulWidget {
   State<BudgetScreen> createState() => _BudgetScreenState();
 }
 
-class _BudgetScreenState extends State<BudgetScreen> {
+class _BudgetScreenState extends State<BudgetScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
   late int _budget;
   String _sort = 'Termurah';
   static const _sorts = ['Termurah', 'Paling Cepat', 'Rating Tertinggi'];
@@ -29,13 +32,27 @@ class _BudgetScreenState extends State<BudgetScreen> {
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
     _budget = widget.budget;
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.repo,
+    return FadeTransition(
+      opacity: _fade,
+      child: AnimatedBuilder(
+        animation: widget.repo,
       builder: (_, _) {
         if (!widget.repo.loaded) {
           return const Scaffold(
@@ -196,7 +213,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
           ),
         );
       },
-    );
+    ));
   }
 
   /// Header #7F2500 ala Figma: kembali + judul + avatar + kapsul budget.

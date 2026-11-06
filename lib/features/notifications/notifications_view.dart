@@ -18,8 +18,28 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState
-    extends State<NotificationsScreen> {
+    extends State<NotificationsScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
   bool _unreadOnly = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   Color _kindColor(String kind) {
     switch (kind) {
@@ -103,12 +123,14 @@ class _NotificationsScreenState
                 !_sameDay(
                     n.at, now.subtract(const Duration(days: 1))))
             .toList();
-        return Scaffold(
-          backgroundColor: AppColors.cream,
-          body: SafeArea(
-            bottom: false,
-            child: ListView(
-              padding: EdgeInsets.zero,
+        return FadeTransition(
+          opacity: _fade,
+          child: Scaffold(
+            backgroundColor: AppColors.cream,
+            body: SafeArea(
+              bottom: false,
+              child: ListView(
+                padding: EdgeInsets.zero,
               children: [
                 _header(),
                 Padding(
@@ -159,7 +181,7 @@ class _NotificationsScreenState
               ],
             ),
           ),
-        );
+        ));
       },
     );
   }

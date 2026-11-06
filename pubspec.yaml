@@ -77,6 +77,17 @@ flutter:
     - assets/places.json
     - assets/images/login_hero.jpg
     - assets/images/google_g.svg
+    - assets/images/
+
+  fonts:
+    - family: NunitoSans
+      fonts:
+        - asset: assets/fonts/nunito_sans/NunitoSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/nunito_sans/NunitoSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/nunito_sans/NunitoSans-ExtraBold.ttf
+          weight: 800
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

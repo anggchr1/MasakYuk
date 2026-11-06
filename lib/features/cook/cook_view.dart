@@ -18,9 +18,23 @@ class CookScreen extends StatefulWidget {
   State<CookScreen> createState() => _CookScreenState();
 }
 
-class _CookScreenState extends State<CookScreen> {
+class _CookScreenState extends State<CookScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
   String _chip = 'Semua';
   final _titleCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
+  }
 
   static const _chips = [
     'Semua',
@@ -62,9 +76,11 @@ class _CookScreenState extends State<CookScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.repo,
-      builder: (_, _) {
+    return FadeTransition(
+      opacity: _fade,
+      child: AnimatedBuilder(
+        animation: widget.repo,
+        builder: (_, _) {
         if (!widget.repo.loaded) {
           return const Center(
               child: CircularProgressIndicator());
@@ -160,6 +176,7 @@ class _CookScreenState extends State<CookScreen> {
           ],
         );
       },
+      ),
     );
   }
 
@@ -305,6 +322,7 @@ class _CookScreenState extends State<CookScreen> {
 
   @override
   void dispose() {
+    _controller.dispose();
     _titleCtrl.dispose();
     super.dispose();
   }

@@ -11,18 +11,33 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   static const _texts = [
     'Menyiapkan bumbu nusantara...',
     'Memanaskan wajan...',
-    'Menata 1500+ resep dapur...',
+    'Menata resep dapur...',
   ];
   int _i = 0;
   Timer? _t;
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
+  late final Animation<double> _logoScale;
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _logoScale = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.elasticOut,
+    );
+    _controller.forward();
+
     _t = Timer.periodic(const Duration(milliseconds: 800), (_) {
       if (mounted) setState(() => _i = (_i + 1) % _texts.length);
     });
@@ -37,22 +52,26 @@ class _SplashScreenState extends State<SplashScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
-          child: Column(
-            children: [
-              const Spacer(),
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 88,
-                    height: 88,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryContainer,
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                    child: const Icon(Icons.soup_kitchen,
-                        size: 44, color: Colors.white),
-                  ),
+          child: FadeTransition(
+            opacity: _fade,
+            child: Column(
+              children: [
+                const Spacer(),
+                ScaleTransition(
+                  scale: _logoScale,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 88,
+                        height: 88,
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryContainer,
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        child: const Icon(Icons.soup_kitchen,
+                            size: 44, color: Colors.white),
+                      ),
                   const Positioned(
                     top: 10,
                     right: 14,
@@ -61,6 +80,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ],
               ),
+            ),
               const SizedBox(height: 16),
               RichText(
                 text: const TextSpan(
@@ -78,7 +98,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   ],
                 ),
               ),
-              const Text('RESEP PINTAR TANPA AI',
+              const Text('APLIKASI MASAK KITA',
                   style: TextStyle(
                       fontSize: 10,
                       letterSpacing: 2,
@@ -132,7 +152,7 @@ class _SplashScreenState extends State<SplashScreen> {
                         backgroundColor:
                             AppColors.primary),
                     SizedBox(width: 6),
-                    Text('Versi 1.0.0 • 1500+ Resep Nusantara • Tanpa AI',
+                    Text('Versi 1.0.0 ',
                         style: TextStyle(fontSize: 11)),
                   ],
                 ),
@@ -147,11 +167,13 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
+
 
   @override
   void dispose() {
+    _controller.dispose();
     _t?.cancel();
     super.dispose();
   }

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Bottom nav ala Stitch: putih, sudut atas 24, ikon aktif terracotta + titik.
-class BottomNav extends StatelessWidget {
+/// Bottom nav modern: 4 kotak area klik equal, bar lebih tinggi & lebar,
+/// ikon aktif di lingkaran putih (dengan outline) yang melongok atas bar,
+/// teks label tetap diam di bawah, icon diperbesar sedikit saat naik.
+class BottomNav extends StatefulWidget {
   final int index;
   final ValueChanged<int> onTap;
   const BottomNav({super.key, required this.index, required this.onTap});
 
-  static const _items = [
+  static const List<(IconData icon, String label)> _items = [
     (Icons.home, 'Home'),
     (Icons.edit_note, 'Masak'),
     (Icons.favorite, 'Favorit'),
@@ -15,74 +17,115 @@ class BottomNav extends StatelessWidget {
   ];
 
   @override
+  State<BottomNav> createState() => _BottomNavState();
+}
+
+class _BottomNavState extends State<BottomNav> {
+  @override
   Widget build(BuildContext context) {
+    final active = widget.index;
+    final width = MediaQuery.of(context).size.width - 16;
+    final itemWidth = width / 4;
+
     return Container(
+      height: 70,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: AppColors.chocolate.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
+            color: AppColors.chocolate.withValues(alpha: 0.10),
+            blurRadius: 24,
+            offset: const Offset(0, -6),
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _items.asMap().entries.map((e) {
-              final active = e.key == index;
-              return InkWell(
-                onTap: () => onTap(e.key),
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
+      clipBehavior: Clip.none,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 4 kotak area klik equal
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(4, (i) {
+              final isActive = i == active;
+              return Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => widget.onTap(i),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        e.value.$1,
-                        color: active
-                            ? AppColors.primary
-                            : AppColors.chocolate
-                                .withValues(alpha: 0.4),
-                      ),
+                      const SizedBox(height: 12),
+                      // Icon hanya untuk item nonaktif. Aktif pake lingkaran di atas,
+                      // tapi tetap reserve tempat agar teks rata dengan item lain.
+                      if (isActive)
+                        const SizedBox(width: 24, height: 24)
+                      else
+                        Icon(
+                          BottomNav._items[i].$1,
+                          size: 24,
+                          color: AppColors.chocolate.withValues(alpha: 0.45),
+                        ),
+                      const SizedBox(height: 6),
                       Text(
-                        e.value.$2,
+                        BottomNav._items[i].$2,
                         style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: active
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isActive
                               ? AppColors.primary
-                              : AppColors.chocolate
-                                  .withValues(alpha: 0.4),
+                              : AppColors.chocolateMuted,
                         ),
                       ),
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: active
-                              ? AppColors.primary
-                              : Colors.transparent,
-                        ),
-                      ),
+                      const SizedBox(height: 10),
                     ],
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ),
-        ),
+
+          // Lingkaran aktif melongok atas bar, ditempatkan tepat di atas item aktif.
+          Positioned(
+            top: -16,
+            left: itemWidth * active + itemWidth / 2 - 22,
+            child: GestureDetector(
+              onTap: () => widget.onTap(active),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.35),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Transform.scale(
+                    scale: 1.1,
+                    child: Icon(
+                      BottomNav._items[active].$1,
+                      size: 22,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -35,9 +35,29 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
   bool _mine = true;
   bool _autoClean = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   int get _made => widget.repo.customs.length;
   int get _saved => widget.repo.favorites.length;
@@ -46,8 +66,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.repo,
+    return FadeTransition(
+      opacity: _fade,
+      child: AnimatedBuilder(
+        animation: widget.repo,
       builder: (_, _) {
         final mine = widget.repo.customs;
         final saved = widget.repo.favorites;
@@ -89,6 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         );
       },
+      ),
     );
   }
 

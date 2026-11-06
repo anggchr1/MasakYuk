@@ -17,7 +17,28 @@ class ArticleScreen extends StatefulWidget {
   State<ArticleScreen> createState() => _ArticleScreenState();
 }
 
-class _ArticleScreenState extends State<ArticleScreen> {
+class _ArticleScreenState extends State<ArticleScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final info = widget.info;
@@ -30,7 +51,9 @@ class _ArticleScreenState extends State<ArticleScreen> {
     final nResep = repo.search({key}).top3.length +
         repo.search({key}).rest.length +
         repo.searchTitle(info.nama).length;
-    return Scaffold(
+    return FadeTransition(
+      opacity: _fade,
+      child: Scaffold(
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -411,7 +434,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   /// Pil fakta ala Figma: sand penuh + lingkaran ikon putih.

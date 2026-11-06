@@ -17,7 +17,10 @@ class PlacesScreen extends StatefulWidget {
   State<PlacesScreen> createState() => _PlacesScreenState();
 }
 
-class _PlacesScreenState extends State<PlacesScreen> {
+class _PlacesScreenState extends State<PlacesScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
   String _q = '';
   String _kat = 'Semua';
   String _sort = 'Rating Tertinggi';
@@ -30,7 +33,20 @@ class _PlacesScreenState extends State<PlacesScreen> {
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
     _fetchLoc();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _ctrl.dispose();
+    super.dispose();
   }
 
   /// GPS nyala saat buka section (sesuai Figma: lokasi saat ini).
@@ -99,8 +115,10 @@ class _PlacesScreenState extends State<PlacesScreen> {
       default:
         items.sort((a, b) => b.rating.compareTo(a.rating));
     }
-    return Scaffold(
-      body: ListView(
+    return FadeTransition(
+      opacity: _fade,
+      child: Scaffold(
+        body: ListView(
         padding: EdgeInsets.zero,
         children: [
           SafeArea(
@@ -636,6 +654,7 @@ class _PlacesScreenState extends State<PlacesScreen> {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -667,11 +686,5 @@ class _PlacesScreenState extends State<PlacesScreen> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
   }
 }

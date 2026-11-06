@@ -29,7 +29,10 @@ class DetailScreen extends StatefulWidget {
   State<DetailScreen> createState() => _DetailScreenState();
 }
 
-class _DetailScreenState extends State<DetailScreen> {
+class _DetailScreenState extends State<DetailScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
   late final DetailProvider _dp;
   final _shot = ScreenshotController();
   final _cmt = TextEditingController();
@@ -44,9 +47,23 @@ class _DetailScreenState extends State<DetailScreen> {
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
     _dp = DetailProvider();
     _pemilik = widget.recipe.origin == 'custom';
     _muatUlasan();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _cmt.dispose();
+    _dp.dispose();
+    super.dispose();
   }
 
   /// Ambil semua ulasan + ringkasan rating dari server.
@@ -134,350 +151,353 @@ class _DetailScreenState extends State<DetailScreen> {
   Widget build(BuildContext context) {
     final r = widget.recipe;
     final e = widget.repo.estCost(r);
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 320,
-            pinned: true,
-            backgroundColor: AppColors.primary,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(40),
-                bottomRight: Radius.circular(40),
-              ),
-            ),
-            centerTitle: true,
-            title: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                color:
-                    Colors.white.withValues(alpha: 0.9),
-                borderRadius:
-                    BorderRadius.circular(9999),
-              ),
-              child: const Text('Resep',
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.chocolate)),
-            ),
-            leading: Padding(
-              padding: const EdgeInsets.all(8),
-              child: CircleAvatar(
-                backgroundColor: Colors.white,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back,
-                      color: AppColors.chocolate),
-                  onPressed: () => Navigator.pop(context),
+    return FadeTransition(
+      opacity: _fade,
+      child: Scaffold(
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 320,
+              pinned: true,
+              backgroundColor: AppColors.primary,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
                 ),
               ),
-            ),
-            actions: [
-              Padding(
+              centerTitle: true,
+              title: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color:
+                      Colors.white.withValues(alpha: 0.9),
+                  borderRadius:
+                      BorderRadius.circular(9999),
+                ),
+                child: const Text('Resep',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.chocolate)),
+              ),
+              leading: Padding(
                 padding: const EdgeInsets.all(8),
                 child: CircleAvatar(
                   backgroundColor: Colors.white,
                   child: IconButton(
-                    icon: const Icon(Icons.share,
+                    icon: const Icon(Icons.arrow_back,
                         color: AppColors.chocolate),
-                    onPressed: () =>
-                        SharePlus.instance.share(
-                      ShareParams(
-                        text:
-                            '${r.title}\n\nBahan:\n${r.ingredientsRaw.join('\n')}\n\n— via MasakYuk',
-                      ),
-                    ),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: AnimatedBuilder(
-                    animation: widget.repo,
-                    builder: (_, _) => IconButton(
-                      icon: Icon(
-                        widget.repo.isFavorite(r.docId)
-                            ? Icons.bookmark
-                            : Icons.bookmark_border,
-                        color: AppColors.primary,
-                      ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    child: IconButton(
+                      icon: const Icon(Icons.share,
+                          color: AppColors.chocolate),
                       onPressed: () =>
-                          widget.repo.toggleFavorite(r.docId),
+                          SharePlus.instance.share(
+                        ShareParams(
+                          text:
+                              '${r.title}\n\nBahan:\n${r.ingredientsRaw.join('\n')}\n\n— via MasakYuk',
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  AppImage(
-                      url: photoFor(r),
-                      fallbackLetter: r.title),
-                  Positioned(
-                    left: 20,
-                    right: 20,
-                    bottom: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black
-                            .withValues(alpha: 0.45),
-                        borderRadius:
-                            BorderRadius.circular(9999),
-                      ),
-                      child: Text(
-                        '${r.category} • ${r.tags.take(3).join(' • ')}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12),
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    child: AnimatedBuilder(
+                      animation: widget.repo,
+                      builder: (_, _) => IconButton(
+                        icon: Icon(
+                          widget.repo.isFavorite(r.docId)
+                              ? Icons.bookmark
+                              : Icons.bookmark_border,
+                          color: AppColors.primary,
+                        ),
+                        onPressed: () =>
+                            widget.repo.toggleFavorite(r.docId),
                       ),
                     ),
                   ),
-                ],
+                ),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    AppImage(
+                        url: photoFor(r),
+                        fallbackLetter: r.title),
+                    Positioned(
+                      left: 20,
+                      right: 20,
+                      bottom: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.black
+                              .withValues(alpha: 0.45),
+                          borderRadius:
+                              BorderRadius.circular(9999),
+                        ),
+                        child: Text(
+                          '${r.category} • ${r.tags.take(3).join(' • ')}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          SliverList(
-            delegate: SliverChildListDelegate([
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: AnimatedBuilder(
-                  animation:
-                      Listenable.merge([_dp, widget.repo]),
-                  builder: (_, _) => Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                    children: [
-                      Text(r.title,
-                          style: const TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.65,
-                              color: AppColors.chocolate)),
-                      const SizedBox(height: 4),
-                      Text(
-                        r.description.isEmpty
-                            ? r.category
-                            : r.description,
-                        style: const TextStyle(
-                            fontSize: 14,
-                            color:
-                                AppColors.chocolateMuted),
-                      ),
-                      const SizedBox(height: 12),
-                      _metaBar(r.displayDuration,
-                          _ratingText()),
-                      const SizedBox(height: 12),
-                      _priceBox(e.min, e.max, e.complete),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _export,
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                side: BorderSide(
-                                    color:
-                                        const Color(0xFFDEC0B7)
-                                            .withValues(
-                                                alpha: 0.7)),
-                                shape:
-                                    const StadiumBorder(),
-                              ),
-                              icon: const Icon(
-                                  Icons.image_outlined,
-                                  size: 18),
-                              label: const Text(
-                                  'Export Gambar Resep',
-                                  textAlign:
-                                      TextAlign.center,
-                                  style: TextStyle(
-                                      fontSize: 12)),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () =>
-                                  Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                        PlacesScreen(
-                                            repo:
-                                                widget.repo)),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                side: BorderSide(
-                                    color:
-                                        const Color(0xFFDEC0B7)
-                                            .withValues(
-                                                alpha: 0.7)),
-                                shape:
-                                    const StadiumBorder(),
-                              ),
-                              icon: const Icon(
-                                  Icons.store_outlined,
-                                  size: 18),
-                              label: const Text(
-                                  'Buka Bahan di Maps',
-                                  textAlign:
-                                      TextAlign.center,
-                                  style: TextStyle(
-                                      fontSize: 12)),
-                            ),
-                          ),
-                        ],
-                      ),
-                      TextButton.icon(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) =>
-                                  EncyclopediaScreen(
-                                      repo: widget.repo)),
-                        ),
-                        icon: const Icon(Icons.menu_book,
-                            size: 16),
-                        label: const Text(
-                            'Pelajari bahan di Wikipedia',
-                            style:
-                                TextStyle(fontSize: 12)),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Text('Bahan',
-                              style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight:
-                                      FontWeight.w700,
-                                  color:
-                                      AppColors.chocolate)),
-                          const SizedBox(width: 8),
-                          Text(
-                            '(${r.ingredientsRaw.length} bahan)',
+            SliverList(
+              delegate: SliverChildListDelegate([
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: AnimatedBuilder(
+                    animation:
+                        Listenable.merge([_dp, widget.repo]),
+                    builder: (_, _) => Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        Text(r.title,
                             style: const TextStyle(
-                                fontSize: 14,
-                                color: AppColors
-                                    .chocolateMuted),
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.65,
+                                color: AppColors.chocolate)),
+                        const SizedBox(height: 4),
+                        Text(
+                          r.description.isEmpty
+                              ? r.category
+                              : r.description,
+                          style: const TextStyle(
+                              fontSize: 14,
+                              color:
+                                  AppColors.chocolateMuted),
+                        ),
+                        const SizedBox(height: 12),
+                        _metaBar(r.displayDuration,
+                            _ratingText()),
+                        const SizedBox(height: 12),
+                        _priceBox(e.min, e.max, e.complete),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _export,
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  side: BorderSide(
+                                      color:
+                                          const Color(0xFFDEC0B7)
+                                              .withValues(
+                                                  alpha: 0.7)),
+                                  shape:
+                                      const StadiumBorder(),
+                                ),
+                                icon: const Icon(
+                                    Icons.image_outlined,
+                                    size: 18),
+                                label: const Text(
+                                    'Export Gambar Resep',
+                                    textAlign:
+                                        TextAlign.center,
+                                    style: TextStyle(
+                                        fontSize: 12)),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () =>
+                                    Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          PlacesScreen(
+                                              repo:
+                                                  widget.repo)),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  side: BorderSide(
+                                      color:
+                                          const Color(0xFFDEC0B7)
+                                              .withValues(
+                                                  alpha: 0.7)),
+                                  shape:
+                                      const StadiumBorder(),
+                                ),
+                                icon: const Icon(
+                                    Icons.store_outlined,
+                                    size: 18),
+                                label: const Text(
+                                    'Buka Bahan di Maps',
+                                    textAlign:
+                                        TextAlign.center,
+                                    style: TextStyle(
+                                        fontSize: 12)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        TextButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    EncyclopediaScreen(
+                                        repo: widget.repo)),
                           ),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: () => setState(() =>
-                                _bahanOpen = !_bahanOpen),
+                          icon: const Icon(Icons.menu_book,
+                              size: 16),
+                          label: const Text(
+                              'Pelajari bahan di Wikipedia',
+                              style:
+                                  TextStyle(fontSize: 12)),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Text('Bahan',
+                                style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight:
+                                        FontWeight.w700,
+                                    color:
+                                        AppColors.chocolate)),
+                            const SizedBox(width: 8),
+                            Text(
+                              '(${r.ingredientsRaw.length} bahan)',
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors
+                                      .chocolateMuted),
+                            ),
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: () => setState(() =>
+                                  _bahanOpen = !_bahanOpen),
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: AppColors.sand,
+                                  borderRadius:
+                                      BorderRadius.circular(
+                                          9999),
+                                ),
+                                child: Icon(
+                                    _bahanOpen
+                                        ? Icons
+                                            .keyboard_arrow_up
+                                        : Icons
+                                            .keyboard_arrow_down,
+                                    size: 18,
+                                    color: AppColors
+                                        .chocolateMuted),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (_bahanOpen)
+                          Screenshot(
+                            controller: _shot,
                             child: Container(
-                              width: 32,
-                              height: 32,
+                              padding:
+                                  const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: AppColors.sand,
                                 borderRadius:
                                     BorderRadius.circular(
-                                        9999),
+                                        32),
                               ),
-                              child: Icon(
-                                  _bahanOpen
-                                      ? Icons
-                                          .keyboard_arrow_up
-                                      : Icons
-                                          .keyboard_arrow_down,
-                                  size: 18,
-                                  color: AppColors
-                                      .chocolateMuted),
+                              child: Column(
+                                children: [
+                                  ...r.ingredientsRaw
+                                      .asMap()
+                                      .entries
+                                      .map(
+                                    (e2) {
+                                      final checked = _dp
+                                          .checked
+                                          .contains(e2.key);
+                                      return Padding(
+                                        padding:
+                                            const EdgeInsets
+                                                .only(
+                                                    bottom:
+                                                        10),
+                                        child: _bahanRow(
+                                            e2.value,
+                                            checked,
+                                            () => _dp.toggle(
+                                                e2.key)),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      if (_bahanOpen)
-                        Screenshot(
-                          controller: _shot,
-                          child: Container(
-                            padding:
-                                const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AppColors.sand,
-                              borderRadius:
-                                  BorderRadius.circular(
-                                      32),
-                            ),
-                            child: Column(
-                              children: [
-                                ...r.ingredientsRaw
-                                    .asMap()
-                                    .entries
-                                    .map(
-                                  (e2) {
-                                    final checked = _dp
-                                        .checked
-                                        .contains(e2.key);
-                                    return Padding(
-                                      padding:
-                                          const EdgeInsets
-                                              .only(
-                                                  bottom:
-                                                      10),
-                                      child: _bahanRow(
-                                          e2.value,
-                                          checked,
-                                          () => _dp.toggle(
-                                              e2.key)),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 12),
-                      _comments(),
-                      const SizedBox(height: 90),
-                    ],
+                        const SizedBox(height: 12),
+                        _comments(),
+                        const SizedBox(height: 90),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ]),
-          ),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        padding:
-            const EdgeInsets.fromLTRB(20, 12, 20, 20),
-        decoration: BoxDecoration(
-          color: AppColors.cream.withValues(alpha: 0.95),
-          boxShadow: const [
-            BoxShadow(
-                color: Color(0x0D3D2314),
-                blurRadius: 20,
-                offset: Offset(0, -4)),
+              ]),
+            ),
           ],
         ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 56,
-            child: ElevatedButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CookingScreen(
-                      repo: widget.repo, recipe: r),
+        bottomNavigationBar: Container(
+          padding:
+              const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          decoration: BoxDecoration(
+            color: AppColors.cream.withValues(alpha: 0.95),
+            boxShadow: const [
+              BoxShadow(
+                  color: Color(0x0D3D2314),
+                  blurRadius: 20,
+                  offset: Offset(0, -4)),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 56,
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CookingScreen(
+                        repo: widget.repo, recipe: r),
+                  ),
                 ),
+                icon:
+                    const Icon(Icons.play_circle_outline),
+                label: const Text('Mulai Memasak'),
               ),
-              icon:
-                  const Icon(Icons.play_circle_outline),
-              label: const Text('Mulai Memasak'),
             ),
           ),
         ),
@@ -903,12 +923,5 @@ class _DetailScreenState extends State<DetailScreen> {
             icon: Icons.error_outline);
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _cmt.dispose();
-    _dp.dispose();
-    super.dispose();
   }
 }

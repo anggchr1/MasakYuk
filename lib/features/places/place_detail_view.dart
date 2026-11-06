@@ -7,15 +7,43 @@ import '../../models/know.dart';
 /// Detail tempat v2 — ikut Figma "15. Detail Tempat" (62:2889):
 /// hero 320 + badge jam + judul + pil stat + rute + tentang +
 /// andalan + jadwal. Tanpa peta embed & ulasan (tak ada datanya).
-class PlaceDetailScreen extends StatelessWidget {
+class PlaceDetailScreen extends StatefulWidget {
   final PlaceInfo place;
   const PlaceDetailScreen(
       {super.key, required this.place});
 
   @override
+  State<PlaceDetailScreen> createState() => _PlaceDetailScreenState();
+}
+
+class _PlaceDetailScreenState extends State<PlaceDetailScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: ListView(
+    return FadeTransition(
+      opacity: _fade,
+      child: Scaffold(
+        body: ListView(
         padding: EdgeInsets.zero,
         children: [
           Stack(
@@ -26,9 +54,9 @@ class PlaceDetailScreen extends StatelessWidget {
                 color: AppColors.sand,
                 child: Center(
                   child: Text(
-                    place.nama.isEmpty
+                    widget.place.nama.isEmpty
                         ? '?'
-                        : place.nama[0],
+                        : widget.place.nama[0],
                     style: const TextStyle(
                         fontSize: 120,
                         fontWeight: FontWeight.w800,
@@ -81,7 +109,7 @@ class PlaceDetailScreen extends StatelessWidget {
                           () => SharePlus.instance.share(
                                 ShareParams(
                                     text:
-                                        '${place.nama}\n${place.alamat}\n\n— via MasakYuk'),
+                                        '${widget.place.nama}\n${widget.place.alamat}\n\n— via MasakYuk'),
                               )),
                     ],
                   ),
@@ -120,7 +148,7 @@ class PlaceDetailScreen extends StatelessWidget {
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
-                              '${place.jenis} • ${place.jam.isEmpty ? 'Buka setiap hari' : place.jam.split(',').first}',
+                              '${widget.place.jenis} • ${widget.place.jam.isEmpty ? 'Buka setiap hari' : widget.place.jam.split(',').first}',
                               maxLines: 1,
                               overflow:
                                   TextOverflow.ellipsis,
@@ -145,7 +173,7 @@ class PlaceDetailScreen extends StatelessWidget {
               crossAxisAlignment:
                   CrossAxisAlignment.start,
               children: [
-                Text(place.nama,
+                Text(widget.place.nama,
                     style: const TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w700,
@@ -159,7 +187,7 @@ class PlaceDetailScreen extends StatelessWidget {
                         color: AppColors.chocolateMuted),
                     const SizedBox(width: 4),
                     Expanded(
-                        child: Text(place.alamat,
+                        child: Text(widget.place.alamat,
                             style: const TextStyle(
                                 fontSize: 14,
                                 color: AppColors
@@ -181,8 +209,8 @@ class PlaceDetailScreen extends StatelessWidget {
                       child: _statPill(
                           Icons.star_outline,
                           'REKAN MASAK',
-                          '★ ${place.rating}',
-                          '(${place.ulasan} ulasan)'),
+                          '★ ${widget.place.rating}',
+                          '(${widget.place.ulasan} ulasan)'),
                     ),
                   ],
                 ),
@@ -226,7 +254,7 @@ class PlaceDetailScreen extends StatelessWidget {
                                     color: AppColors
                                         .chocolateMuted)),
                             Text(
-                                '${place.harga} — ${place.hargaNote}',
+                                '${widget.place.harga} — ${widget.place.hargaNote}',
                                 style: const TextStyle(
                                     fontSize: 15,
                                     fontWeight:
@@ -265,7 +293,7 @@ class PlaceDetailScreen extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () => launchUrl(
                       Uri.parse(
-                          'https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}&travelmode=driving'),
+                          'https://www.google.com/maps/dir/?api=1&destination=${widget.place.lat},${widget.place.lng}&travelmode=driving'),
                       mode:
                           LaunchMode.externalApplication,
                     ),
@@ -314,7 +342,7 @@ class PlaceDetailScreen extends StatelessWidget {
                     crossAxisAlignment:
                         CrossAxisAlignment.start,
                     children: [
-                      Text(place.desc,
+                      Text(widget.place.desc,
                           style: const TextStyle(
                               fontSize: 14,
                               height: 22.75 / 14,
@@ -379,7 +407,7 @@ class PlaceDetailScreen extends StatelessWidget {
                             color: AppColors.chocolate)),
                     const Spacer(),
                     Text(
-                        '${place.unggulan.length} Bahan Utama',
+                        '${widget.place.unggulan.length} Bahan Utama',
                         style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -389,7 +417,7 @@ class PlaceDetailScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                ...place.unggulan.map((u) => Container(
+                ...widget.place.unggulan.map((u) => Container(
                       margin:
                           const EdgeInsets.only(
                               bottom: 10),
@@ -504,9 +532,9 @@ class PlaceDetailScreen extends StatelessWidget {
                                         .start,
                                 children: [
                                   Text(
-                                      place.jam.isEmpty
+                                      widget.place.jam.isEmpty
                                           ? 'Jam operasional: setiap hari'
-                                          : 'Jam operasional: ${place.jam}',
+                                          : 'Jam operasional: ${widget.place.jam}',
                                       style: const TextStyle(
                                           fontSize: 15,
                                           fontWeight:
@@ -587,7 +615,7 @@ class PlaceDetailScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _floatBtn(

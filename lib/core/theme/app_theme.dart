@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/anim_helper.dart';
 
 // MasakYuk — Warm Spice Kitchen tokens (dari DesignMasakYukMobile/warm_spice_kitchen/DESIGN.md)
 class AppColors {
@@ -74,6 +75,12 @@ class AppTheme {
         backgroundColor: Colors.white,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: Color(0x663D2314),
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: SlidePageTransitionsBuilder(),
+          TargetPlatform.iOS: SlidePageTransitionsBuilder(),
+        },
       ),
     );
   }

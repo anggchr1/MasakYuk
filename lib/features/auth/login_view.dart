@@ -6,26 +6,54 @@ import 'auth_provider.dart';
 /// Login v2 — ikut Figma "2. Login - MasakYuk v2" (62:373):
 /// hero foto + badge melayang, judul, 2 tombol pill, trust row, disclaimer.
 /// Tombol Google memakai OAuth yang sama dengan web (lihat AuthProvider).
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   final AuthProvider auth;
   final VoidCallback onGuest;
   const LoginScreen({super.key, required this.auth, required this.onGuest});
 
   @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.cream, Color(0xFFFFF8F6), Colors.white],
+    return FadeTransition(
+      opacity: _fade,
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [AppColors.cream, Color(0xFFFFF8F6), Colors.white],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
+          child: SafeArea(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
               // Hero: foto rounded 32 + badge melayang.
               Padding(
                 padding:
@@ -86,6 +114,14 @@ class LoginScreen extends StatelessWidget {
                                     color: AppColors.sand
                                         .withValues(alpha: 0.8),
                                   ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.chocolate
+                                          .withValues(alpha: 0.06),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -120,11 +156,18 @@ class LoginScreen extends StatelessWidget {
                                   color: AppColors.primary,
                                   borderRadius: BorderRadius.circular(9999),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.star,
-                                        size: 13, color: Colors.white),
+                                    SvgPicture.asset(
+                                      'assets/images/l4.svg',
+                                      width: 13,
+                                      height: 13,
+                                      colorFilter: const ColorFilter.mode(
+                                        Colors.white,
+                                        BlendMode.srcIn,
+                                      ),
+                                    ),
                                     SizedBox(width: 4),
                                     Text(
                                       '4.9',
@@ -158,11 +201,18 @@ class LoginScreen extends StatelessWidget {
                         color: const Color(0xFFFFEAE0),
                         borderRadius: BorderRadius.circular(9999),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.soup_kitchen,
-                              size: 13, color: AppColors.secondary),
+                          SvgPicture.asset(
+                            'assets/images/l5.svg',
+                            width: 13,
+                            height: 13,
+                            colorFilter: const ColorFilter.mode(
+                              AppColors.secondary,
+                              BlendMode.srcIn,
+                            ),
+                          ),
                           SizedBox(width: 6),
                           Text(
                             'DAPUR RUMAH IDAMAN',
@@ -204,7 +254,7 @@ class LoginScreen extends StatelessWidget {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed:
-                            auth.busy ? null : auth.loginWithGoogle,
+                            widget.auth.busy ? null : widget.auth.loginWithGoogle,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: AppColors.chocolate,
@@ -214,7 +264,7 @@ class LoginScreen extends StatelessWidget {
                           side: const BorderSide(
                               color: Color(0xFFDEC0B7)),
                         ),
-                        child: auth.busy
+                        child: widget.auth.busy
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
@@ -239,10 +289,10 @@ class LoginScreen extends StatelessWidget {
                               ),
                       ),
                     ),
-                    if (auth.error != null) ...[
+                    if (widget.auth.error != null) ...[
                       const SizedBox(height: 12),
                       Text(
-                        auth.error!,
+                        widget.auth.error!,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 12,
@@ -255,7 +305,7 @@ class LoginScreen extends StatelessWidget {
                       height: 52,
                       width: double.infinity,
                       child: OutlinedButton(
-                        onPressed: onGuest,
+                        onPressed: widget.onGuest,
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.primary,
                           side: const BorderSide(
@@ -337,6 +387,6 @@ class LoginScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 }

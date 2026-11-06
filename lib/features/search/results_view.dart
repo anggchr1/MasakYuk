@@ -34,7 +34,10 @@ class ResultsScreen extends StatefulWidget {
   State<ResultsScreen> createState() => _ResultsScreenState();
 }
 
-class _ResultsScreenState extends State<ResultsScreen> {
+class _ResultsScreenState extends State<ResultsScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
   late Set<String> _inputs;
   late bool _showAll;
   String _sort = 'Kecocokan';
@@ -44,6 +47,12 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
     _inputs = Set.of(widget.inputs);
   }
 
@@ -51,6 +60,13 @@ class _ResultsScreenState extends State<ResultsScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _showAll = widget.showAll;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   List<Recipe> get _base {
@@ -85,94 +101,96 @@ class _ResultsScreenState extends State<ResultsScreen> {
         final shown =
             _showAll ? items : items.take(3).toList();
         final rest = items.length - shown.length;
-        return Scaffold(
-          body: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              _header(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    20, 16, 20, 0),
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Text('BAHAN DIGUNAKAN',
-                            style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
-                                color: AppColors
-                                    .chocolateMuted)),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: () =>
-                              setState(_inputs.clear),
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize:
-                                const Size(0, 28),
-                          ),
-                          child: const Text('Reset',
+        return FadeTransition(
+          opacity: _fade,
+          child: Scaffold(
+            body: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _header(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      20, 16, 20, 0),
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('BAHAN DIGUNAKAN',
                               style: TextStyle(
                                   fontSize: 12,
-                                  fontWeight:
-                                      FontWeight.w700,
-                                  color:
-                                      Color(0xFF7F2500))),
-                        ),
-                      ],
-                    ),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          ..._inputs.map((b) => Padding(
-                                padding:
-                                    const EdgeInsets.only(
-                                        right: 8),
-                                child: Container(
-                                  padding: const EdgeInsets
-                                      .symmetric(
-                                      horizontal: 14,
-                                      vertical: 6),
-                                  decoration:
-                                      BoxDecoration(
-                                    color: const Color(
-                                        0xFF7F2500),
-                                    borderRadius:
-                                        BorderRadius.circular(
-                                            9999),
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.6,
+                                  color: AppColors
+                                      .chocolateMuted)),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () =>
+                                setState(_inputs.clear),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize:
+                                  const Size(0, 28),
+                            ),
+                            child: const Text('Reset',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight:
+                                        FontWeight.w700,
+                                    color:
+                                        Color(0xFF7F2500))),
+                          ),
+                        ],
+                      ),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            ..._inputs.map((b) => Padding(
+                                  padding:
+                                      const EdgeInsets.only(
+                                          right: 8),
+                                  child: Container(
+                                    padding: const EdgeInsets
+                                        .symmetric(
+                                        horizontal: 14,
+                                        vertical: 6),
+                                    decoration:
+                                        BoxDecoration(
+                                      color: const Color(
+                                          0xFF7F2500),
+                                      borderRadius:
+                                          BorderRadius.circular(
+                                              9999),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize:
+                                          MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          b[0].toUpperCase() +
+                                              b.substring(1),
+                                          style:
+                                              const TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight:
+                                                      FontWeight
+                                                          .w600,
+                                                  color: Colors
+                                                      .white),
+                                        ),
+                                        const SizedBox(
+                                            width: 6),
+                                        const Icon(
+                                            Icons.check,
+                                            size: 12,
+                                            color:
+                                                Colors.white),
+                                      ],
+                                    ),
                                   ),
-                                  child: Row(
-                                    mainAxisSize:
-                                        MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        b[0].toUpperCase() +
-                                            b.substring(1),
-                                        style:
-                                            const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight:
-                                                    FontWeight
-                                                        .w600,
-                                                color: Colors
-                                                    .white),
-                                      ),
-                                      const SizedBox(
-                                          width: 6),
-                                      const Icon(
-                                          Icons.check,
-                                          size: 12,
-                                          color:
-                                              Colors.white),
-                                    ],
-                                  ),
-                                ),
-                              )),
+                                )),
                           GestureDetector(
                             onTap: _addIngredient,
                             child: Container(
@@ -331,7 +349,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               ),
             ],
           ),
-        );
+        ));
       },
     );
   }
@@ -728,11 +746,5 @@ class _ResultsScreenState extends State<ResultsScreen> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
   }
 }

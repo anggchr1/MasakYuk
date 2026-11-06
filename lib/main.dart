@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:timeago/timeago.dart' as timeago;
+
 import 'core/theme/app_theme.dart';
 import 'core/widgets/bottom_nav.dart';
 import 'data/recipe_repository.dart';
@@ -13,6 +15,13 @@ import 'features/profile/profile_view.dart';
 
 void main() {
   timeago.setLocaleMessages('id', timeago.IdMessages());
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarColor: Colors.white,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
   runApp(const MasakYukApp());
 }
 
@@ -120,45 +129,87 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   late int _tab = widget.initialTab;
-  // Diubah tiap tab Beranda diketuk ulang → HomeScreen dibangun fresh
-  // (chip Semua, search kosong) sehingga selalu "kembali ke beranda".
-  int _homeSalt = 0;
+  late int _prevTab;
+
+  @override
+  void initState() {
+    super.initState();
+    _prevTab = widget.initialTab;
+  }
+
+  Widget _pageAt(int i) {
+    switch (i) {
+      case 0:
+        return HomeScreen(
+          repo: widget.repo,
+          onNeedLogin: widget.onLogout,
+        );
+      case 1:
+        return CookScreen(repo: widget.repo);
+      case 2:
+        return FavoritesScreen(
+          repo: widget.repo,
+          onNeedLogin: widget.onLogout,
+        );
+      case 3:
+        return ProfileScreen(
+          repo: widget.repo,
+          onLogout: widget.onLogout,
+          isGuest: widget.isGuest,
+          onLogin: widget.onLogin,
+          onProfileSaved: widget.onProfileSaved,
+          onHapusAkun: widget.onHapusAkun,
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Arah slide: maju (tab naik) geser dari kanan, mundur geser dari kiri.
+    final Offset slideFrom = _tab > _prevTab
+        ? const Offset(1.0, 0.0)
+        : const Offset(-1.0, 0.0);
+
     return Scaffold(
       body: SafeArea(
-        child: IndexedStack(
-          index: _tab,
-          children: [
-            HomeScreen(
-              key: ValueKey(_homeSalt),
-              repo: widget.repo,
-              onNeedLogin: widget.onLogout,
-            ),
-            CookScreen(repo: widget.repo),
-            FavoritesScreen(
-              repo: widget.repo,
-              onNeedLogin: widget.onLogout,
-            ),
-            ProfileScreen(
-                repo: widget.repo,
-                onLogout: widget.onLogout,
-                isGuest: widget.isGuest,
-                onLogin: widget.onLogin,
-                onProfileSaved: widget.onProfileSaved,
-                onHapusAkun: widget.onHapusAkun),
-          ],
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          switchInCurve: Curves.easeInOut,
+          switchOutCurve: Curves.easeInOut,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: slideFrom,
+                end: Offset.zero,
+              ).animate(animation),
+              child: FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+            );
+          },
+          child: IndexedStack(
+            key: ValueKey(_tab),
+            index: _tab,
+            children: [
+              _pageAt(0),
+              _pageAt(1),
+              _pageAt(2),
+              _pageAt(3),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: BottomNav(
         index: _tab,
         onTap: (i) {
-          if (i == 0 && _tab == 0) {
-            setState(() => _homeSalt++); // ketuk Beranda 2x = reset
-          } else {
-            setState(() => _tab = i);
-          }
+          if (i == _tab) return;
+          setState(() {
+            _prevTab = _tab;
+            _tab = i;
+          });
         },
       ),
     );

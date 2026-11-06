@@ -20,11 +20,25 @@ class EncyclopediaScreen extends StatefulWidget {
 }
 
 class _EncyclopediaScreenState
-    extends State<EncyclopediaScreen> {
+    extends State<EncyclopediaScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
   String _q = '';
   String _kat = 'Semua';
   String _tab = 'Bahan';
   final _ctrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
+  }
 
   String? _priceOf(Recipe r) {
     final e = widget.repo.estCost(r);
@@ -39,11 +53,13 @@ class _EncyclopediaScreenState
     final allRes = repo.search({});
     final nResep = allRes.top3.length + allRes.rest.length;
     final nTempat = repo.places.length;
-    return Scaffold(
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          SafeArea(
+    return FadeTransition(
+      opacity: _fade,
+      child: Scaffold(
+        body: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            SafeArea(
             bottom: false,
             child: Container(
             padding: const EdgeInsets.fromLTRB(
@@ -160,7 +176,7 @@ class _EncyclopediaScreenState
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _segTab(String label, int count) {
@@ -645,6 +661,7 @@ class _EncyclopediaScreenState
 
   @override
   void dispose() {
+    _controller.dispose();
     _ctrl.dispose();
     super.dispose();
   }

@@ -23,7 +23,10 @@ class AddRecipeScreen extends StatefulWidget {
   State<AddRecipeScreen> createState() => _AddRecipeScreenState();
 }
 
-class _AddRecipeScreenState extends State<AddRecipeScreen> {
+class _AddRecipeScreenState extends State<AddRecipeScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
   final _title = TextEditingController();
   final _desc = TextEditingController();
   final _price = TextEditingController();
@@ -69,6 +72,12 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
     final e = widget.existing;
     if (e == null) return;
     _title.text = e.title;
@@ -102,8 +111,10 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     final shownTitle = _title.text.trim().isEmpty
         ? 'Judul Masakan Anda'
         : _title.text.trim();
-    return Scaffold(
-      appBar: AppBar(
+    return FadeTransition(
+      opacity: _fade,
+      child: Scaffold(
+        appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: AppColors.chocolate,
         elevation: 0,
@@ -798,7 +809,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           const SizedBox(height: 24),
         ],
       ),
-    );
+    ));
   }
 
   Widget _numberBox(String label, TextEditingController ctrl,
@@ -994,6 +1005,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
 
   @override
   void dispose() {
+    _controller.dispose();
     _title.dispose();
     _desc.dispose();
     _price.dispose();

@@ -23,7 +23,10 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
   late final HomeProvider _hp;
   final _titleCtrl = TextEditingController();
   final _budgetCtrl =
@@ -32,6 +35,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
     _hp = HomeProvider(widget.repo);
   }
 
@@ -56,7 +65,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return FadeTransition(
+      opacity: _fade,
+      child: Scaffold(
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 72),
         child: FloatingActionButton(
@@ -92,6 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         );
         },
+      ),
       ),
     );
   }
@@ -789,6 +801,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _controller.dispose();
     _titleCtrl.dispose();
     _budgetCtrl.dispose();
     _hp.dispose();
