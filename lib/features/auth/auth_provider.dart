@@ -231,6 +231,7 @@ class AuthProvider extends ChangeNotifier {
       return 'Login Google gagal: ${e.message ?? e.code}';
     }
     debugPrint('Login Google error: $e');
-    return 'Gagal masuk. Periksa koneksi ke server.';
+    return 'Server tidak bisa dihubungi ($apiBaseUrl). '
+        'Pastikan HP & PC satu Wi-Fi dan backend jalan di 0.0.0.0:8000.';
   }
 }
