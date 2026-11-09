@@ -216,10 +216,17 @@ class AuthProvider extends ChangeNotifier {
       return 'Gagal masuk (${e.status}). Coba lagi.';
     }
     if (e is PlatformException) {
+      final m = e.message ?? '';
       // v6: DEVELOPER_ERROR = client Android (package + SHA-1) belum terdaftar.
-      if (e.message?.contains('10:') ?? false) {
+      if (m.contains('10:')) {
         return 'Client Android (package + SHA-1) belum terdaftar di '
             'Google Cloud.';
+      }
+      // NETWORK_ERROR: HP tidak bisa menghubungi layanan Google.
+      if (m.contains('7:')) {
+        return 'Google tidak bisa dihubungi dari HP ini (NETWORK_ERROR). '
+            'Coba data seluler, matikan VPN/Private DNS, dan pastikan '
+            'akun Google + Play Services aktif.';
       }
       return 'Login Google gagal: ${e.message ?? e.code}';
     }
