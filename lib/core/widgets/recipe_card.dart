@@ -5,7 +5,7 @@ import '../theme/app_theme.dart';
 import 'app_image.dart';
 
 /// Kartu resep ala Figma Home v2: foto rounded + ribbon harga + hati
-/// + judul + deskripsi + divider + durasi & badge kesulitan.
+/// + judul + deskripsi + divider + durasi & rating.
 /// Foto tetap dinamis dari data (pool + fallback monogram).
 class RecipeCard extends StatelessWidget {
   final Recipe recipe;
@@ -189,12 +189,21 @@ class RecipeCard extends StatelessWidget {
                               borderRadius:
                                   BorderRadius.circular(9999),
                             ),
-                            child: Text(
-                              recipe.displayDifficulty,
-                              style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF822701)),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.star_rounded,
+                                    size: 13,
+                                    color: Color(0xFF822701)),
+                                const SizedBox(width: 2),
+                                Text(
+                                  recipe.displayRating,
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF822701)),
+                                ),
+                              ],
                             ),
                           ),
                         ],

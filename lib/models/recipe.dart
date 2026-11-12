@@ -21,11 +21,12 @@ class Recipe {
   // Diisi user untuk resep custom; null di master (pakai estimasi di bawah).
   final String description;
   final String? durationText; // cth "35 mnt"
-  final String? difficulty; // Mudah | Sedang | Sulit
   final String? servings; // cth "3-4 Porsi"
   final int? estCostManual; // input user (Rp total), null = hitung tabel
   final DateTime? createdAt; // resep custom (untuk purge draf lama)
   final String? photoUrl; // foto unggahan user (Cloudinary); null = foto kategori
+  final double? ratingRata; // rata-rata skor dari server
+  final int jumlahPenilai;
 
   const Recipe({
     required this.docId,
@@ -47,11 +48,12 @@ class Recipe {
     this.ownerId,
     this.description = '',
     this.durationText,
-    this.difficulty,
     this.servings,
     this.estCostManual,
     this.createdAt,
     this.photoUrl,
+    this.ratingRata,
+    this.jumlahPenilai = 0,
   });
 
   static List<String> _strList(dynamic v) =>
@@ -83,26 +85,26 @@ class Recipe {
       ownerId: j['ownerId'] as String? ?? j['userId'] as String?,
       description: j['description'] as String? ?? '',
       durationText: j['durationText'] as String?,
-      difficulty: j['difficulty'] as String?,
       servings: j['servings'] as String?,
       estCostManual: (j['estCostManual'] as num?)?.toInt(),
       createdAt: j['createdAt'] == null
           ? null
           : DateTime.tryParse(j['createdAt'] as String),
       photoUrl: ((j['gambar_utama'] as Map?)?['url'])?.toString(),
+      ratingRata: _num(j['rating_rata']),
+      jumlahPenilai: (j['jumlah_penilai'] as num?)?.toInt() ?? 0,
     );
   }
 
-  /// Badge durasi/kesulitan di kartu: master tidak punya data,
-  /// jadi pakai heuristik (±5 mnt/langkah). Custom pakai input user.
+  /// Badge durasi di kartu: master tidak punya data, jadi pakai
+  /// heuristik (±5 mnt/langkah). Custom pakai input user.
   String get displayDuration =>
       durationText ?? '±${(stepsList.length * 5).clamp(10, 120)} mnt';
-  String get displayDifficulty {
-    if (difficulty != null) return difficulty!;
-    final n = ingredientsRaw.length;
-    if (n <= 6) return 'Mudah';
-    if (n <= 10) return 'Sedang';
-    return 'Sulit';
+
+  /// Badge rating di kartu: rata-rata skor, "-" bila belum ada penilai.
+  String get displayRating {
+    if (jumlahPenilai == 0 || ratingRata == null) return '-';
+    return ratingRata!.toStringAsFixed(1);
   }
 
   /// Status olah per bahan ala desain (Siap/Haluskan/Potong).

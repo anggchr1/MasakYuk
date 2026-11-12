@@ -528,7 +528,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                         alpha: 0.4)),
                           ),
                           child: Text(
-                              r.displayDifficulty,
+                              '★ ${r.displayRating}',
                               style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight:

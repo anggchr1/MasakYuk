@@ -239,6 +239,8 @@ class ApiRecipeSource {
       estCostManual: _toInt(j['harga_resep']),
       createdAt: DateTime.tryParse((j['created_at'] ?? '').toString()),
       photoUrl: ((j['gambar_utama'] as Map?)?['url'])?.toString(),
+      ratingRata: (j['rating_rata'] as num?)?.toDouble(),
+      jumlahPenilai: _toInt(j['jumlah_penilai']) ?? 0,
     );
   }
 

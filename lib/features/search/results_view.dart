@@ -705,7 +705,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                                     9999),
                           ),
                           child: Text(
-                              r.displayDifficulty,
+                              '★ ${r.displayRating}',
                               style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight:

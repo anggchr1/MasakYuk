@@ -740,7 +740,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                         borderRadius:
                             BorderRadius.circular(9999),
                       ),
-                      child: Text(r.displayDifficulty,
+                      child: Text('★ ${r.displayRating}',
                           style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
