@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- App selalu mode terang; splash native ikut warna cream agar
-         tidak ada kedipan putih/hitam sebelum splash Flutter. -->
+    <!-- Android 12+ wajib punya splash sistem. Dibuat transparan tanpa ikon,
+         jadi yang terlihat hanya splash Flutter (splash_view.dart). -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <item name="android:windowBackground">@drawable/launch_background</item>
-        <item name="android:windowSplashScreenBackground">@color/launch_background</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowSplashScreenBackground">@android:color/transparent</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_transparan</item>
     </style>
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
