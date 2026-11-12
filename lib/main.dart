@@ -57,7 +57,10 @@ class _MasakYukAppState extends State<MasakYukApp> {
     _auth = AuthProvider(_repo);
     _repo.load(); // NANTI M2: + Firebase.initializeApp + Auth gate
     _auth.muatSesi().then((_) {
-      if (_auth.loggedIn) _repo.muatResepMilikku();
+      if (_auth.loggedIn) {
+        _repo.muatResepMilikku();
+        _repo.muatFavorit();
+      }
     });
   }
 

@@ -227,7 +227,7 @@ class ApiRecipeSource {
       carbohydrate: null,
       hasNutrition: false,
       nutritionSource: 'missing',
-      loves: 0,
+      loves: _toInt(j['jumlah_favorit']) ?? 0,
       origin: mine ? 'custom' : 'system',
       isPublished: (j['status'] as String? ?? 'terbit') == 'terbit',
       ownerId: mine ? j['pemilik_id']?.toString() : null,

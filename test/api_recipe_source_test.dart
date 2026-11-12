@@ -99,6 +99,16 @@ void main() {
     expect(r.displayRating, '5.0');
   });
 
+  test('jumlah_favorit dari API menjadi loves (dihitung di Profil)', () {
+    final r = ApiRecipeSource().toRecipe({
+      'id': 26,
+      'judul': 'Sate Maranggi',
+      'jumlah_favorit': 1,
+    });
+
+    expect(r.loves, 1);
+  });
+
   test('bahanPayload memecah jumlah & satuan', () {
     final api = ApiRecipeSource();
     expect(api.bahanPayload('2 siung bawang putih'),

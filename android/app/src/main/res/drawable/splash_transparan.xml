@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ memakai ikon aplikasi bawaan bila tidak diatur.
+     Splash native cukup warna cream; logo ada di splash Flutter. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@android:color/transparent" />
+</shape>

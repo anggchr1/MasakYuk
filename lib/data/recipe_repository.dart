@@ -297,8 +297,52 @@ class RecipeRepository extends ChangeNotifier {
   }
 
   void toggleFavorite(String docId) {
-    if (!_favorites.remove(docId)) _favorites.add(docId);
+    final hapus = _favorites.remove(docId);
+    if (!hapus) _favorites.add(docId);
     notifyListeners();
+    if (api.token != null) _kirimFavorit(docId, hapus);
+  }
+
+  /// Favorit milik akun yang login, dimuat sekali per sesi.
+  Future<void> muatFavorit() async {
+    if (api.token == null) return;
+    try {
+      final ids = <String>[];
+      for (var page = 1;; page++) {
+        final res = await api.get('/api/v1/favorit', query: {'page': '$page'});
+        final data =
+            ((res['data'] as List?) ?? const []).cast<Map<String, dynamic>>();
+        ids.addAll(data.map((e) => (e['resep_id'] ?? '').toString()));
+        final last = (res['last_page'] as num?)?.toInt() ?? 1;
+        if (page >= last) break;
+      }
+      _favorites
+        ..clear()
+        ..addAll(ids);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Gagal memuat favorit: $e');
+    }
+  }
+
+  /// Simpan/hapus favorit di server; lokal dikembalikan bila server menolak.
+  Future<void> _kirimFavorit(String docId, bool hapus) async {
+    try {
+      if (hapus) {
+        await api.delete('/api/v1/favorit/$docId');
+      } else {
+        await api.post('/api/v1/favorit',
+            body: {'resep_id': int.tryParse(docId)});
+      }
+    } catch (e) {
+      if (hapus) {
+        _favorites.add(docId);
+      } else {
+        _favorites.remove(docId);
+      }
+      notifyListeners();
+      debugPrint('Gagal menyinkronkan favorit: $e');
+    }
   }
 
   /// Beri tahu UI setelah nama/foto profil diganti dari layar Profil.
