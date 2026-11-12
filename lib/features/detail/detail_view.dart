@@ -753,27 +753,30 @@ class _DetailScreenState extends State<DetailScreen>
                         fontSize: 13,
                         color: AppColors.chocolateMuted))
               else
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Beri Bintang Resep:',
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: AppColors.chocolate)),
-                    const Spacer(),
-                    ...List.generate(
-                        5,
-                        (i) => IconButton(
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              icon: Icon(
-                                i < _nilaiSaya
-                                    ? Icons.star
-                                    : Icons.star_border,
-                                color: AppColors.amber,
-                              ),
-                              onPressed: () => _nilai(i + 1),
-                            )),
+                    Row(
+                      children: List.generate(
+                          5,
+                          (i) => IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints:
+                                    const BoxConstraints(),
+                                icon: Icon(
+                                  i < _nilaiSaya
+                                      ? Icons.star
+                                      : Icons.star_border,
+                                  color: AppColors.amber,
+                                ),
+                                onPressed: () => _nilai(i + 1),
+                              )),
+                    ),
                   ],
                 ),
               const SizedBox(height: 12),
