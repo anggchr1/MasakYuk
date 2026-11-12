@@ -106,7 +106,7 @@ class _SplashScreenState extends State<SplashScreen>
                       color: AppColors.chocolateMuted)),
               const SizedBox(height: 24),
               const Text(
-                'Ubah stok bahan di kulkasmu menjadi hidangan istimewa keluarga setiap hari.',
+                'Cari resep masakan dan masak setiap hari.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     color: AppColors.chocolateMuted),

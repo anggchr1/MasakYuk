@@ -138,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     ),
                                     SizedBox(width: 8),
                                     Text(
-                                      '1500+ Resep Nusantara • Mudah',
+                                      'Berbagai resep rumahan',
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w700,

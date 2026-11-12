@@ -597,7 +597,7 @@ class _CookingScreenState extends State<CookingScreen>
                             : () => _nav(_cp.next,
                                 steps[_cp.index + 1]),
                         child: Text(_cp.isLast
-                            ? 'Selesaikan 🎉'
+                            ? 'Selesaikan'
                             : 'Lanjut ke Langkah ${_cp.index + 2} →'),
                       ),
                     ),
