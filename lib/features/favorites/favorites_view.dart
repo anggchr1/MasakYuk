@@ -104,7 +104,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                       crossAxisCount: 2,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 0.70,
+                      // Tinggi tetap: kartu punya gambar 144px, rasio
+                      // aspek membuatnya meluber di layar tertentu.
+                      mainAxisExtent: 290,
                     ),
                       itemCount: items.length,
                       itemBuilder: (_, i) {

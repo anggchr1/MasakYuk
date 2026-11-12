@@ -14,10 +14,9 @@ import '../../data/recipe_repository.dart';
 import '../../models/recipe.dart';
 import '../cooking/cooking_view.dart';
 import '../encyclopedia/encyclopedia_view.dart';
-import '../places/places_view.dart';
 import 'detail_provider.dart';
 
-/// Detail v2: hero + pita harga + export/maps/wiki + bahan +
+/// Detail v2: hero + pita harga + wiki + bahan +
 /// tips + KOMENTAR & RATING + CTA. (Tanpa gizi/AI.)
 class DetailScreen extends StatefulWidget {
   final RecipeRepository repo;
@@ -205,13 +204,7 @@ class _DetailScreenState extends State<DetailScreen>
                     child: IconButton(
                       icon: const Icon(Icons.share,
                           color: AppColors.chocolate),
-                      onPressed: () =>
-                          SharePlus.instance.share(
-                        ShareParams(
-                          text:
-                              '${r.title}\n\nBahan:\n${r.ingredientsRaw.join('\n')}\n\n— via MasakYuk',
-                        ),
-                      ),
+                      onPressed: _export,
                     ),
                   ),
                 ),
@@ -301,68 +294,7 @@ class _DetailScreenState extends State<DetailScreen>
                             _ratingText()),
                         const SizedBox(height: 12),
                         _priceBox(e.min, e.max, e.complete),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: _export,
-                                style: OutlinedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  side: BorderSide(
-                                      color:
-                                          const Color(0xFFDEC0B7)
-                                              .withValues(
-                                                  alpha: 0.7)),
-                                  shape:
-                                      const StadiumBorder(),
-                                ),
-                                icon: const Icon(
-                                    Icons.image_outlined,
-                                    size: 18),
-                                label: const Text(
-                                    'Export Gambar Resep',
-                                    textAlign:
-                                        TextAlign.center,
-                                    style: TextStyle(
-                                        fontSize: 12)),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () =>
-                                    Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          PlacesScreen(
-                                              repo:
-                                                  widget.repo)),
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  side: BorderSide(
-                                      color:
-                                          const Color(0xFFDEC0B7)
-                                              .withValues(
-                                                  alpha: 0.7)),
-                                  shape:
-                                      const StadiumBorder(),
-                                ),
-                                icon: const Icon(
-                                    Icons.store_outlined,
-                                    size: 18),
-                                label: const Text(
-                                    'Buka Bahan di Maps',
-                                    textAlign:
-                                        TextAlign.center,
-                                    style: TextStyle(
-                                        fontSize: 12)),
-                              ),
-                            ),
-                          ],
-                        ),
+                        const SizedBox(height: 4),
                         TextButton.icon(
                           onPressed: () => Navigator.push(
                             context,
@@ -424,43 +356,35 @@ class _DetailScreenState extends State<DetailScreen>
                         ),
                         const SizedBox(height: 12),
                         if (_bahanOpen)
-                          Screenshot(
-                            controller: _shot,
-                            child: Container(
-                              padding:
-                                  const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: AppColors.sand,
-                                borderRadius:
-                                    BorderRadius.circular(
-                                        32),
-                              ),
-                              child: Column(
-                                children: [
-                                  ...r.ingredientsRaw
-                                      .asMap()
-                                      .entries
-                                      .map(
-                                    (e2) {
-                                      final checked = _dp
-                                          .checked
-                                          .contains(e2.key);
-                                      return Padding(
-                                        padding:
-                                            const EdgeInsets
-                                                .only(
-                                                    bottom:
-                                                        10),
-                                        child: _bahanRow(
-                                            e2.value,
-                                            checked,
-                                            () => _dp.toggle(
-                                                e2.key)),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.sand,
+                              borderRadius:
+                                  BorderRadius.circular(32),
+                            ),
+                            child: Column(
+                              children: [
+                                ...r.ingredientsRaw
+                                    .asMap()
+                                    .entries
+                                    .map(
+                                  (e2) {
+                                    final checked = _dp
+                                        .checked
+                                        .contains(e2.key);
+                                    return Padding(
+                                      padding: const EdgeInsets
+                                          .only(bottom: 10),
+                                      child: _bahanRow(
+                                          e2.value,
+                                          checked,
+                                          () => _dp.toggle(
+                                              e2.key)),
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                           ),
                         const SizedBox(height: 12),
@@ -909,19 +833,28 @@ class _DetailScreenState extends State<DetailScreen>
     );
   }
 
-  /// Export daftar bahan jadi gambar PNG → share/simpan.
+  /// Export kartu resep (judul, meta, foto, bahan) → PNG → share/simpan.
   Future<void> _export() async {
+    final r = widget.recipe;
     try {
-      final bytes = await _shot.capture();
-      if (bytes == null) throw 'gagal render';
+      try {
+        await precacheImage(NetworkImage(photoFor(r)), context);
+      } catch (_) {
+        // Foto gagal dimuat: kartu tetap dibuat dengan monogram.
+      }
+      if (!mounted) return;
+      final bytes = await _shot.captureFromWidget(
+        _gambarEkspor(r),
+        context: context,
+        pixelRatio: 3,
+        delay: const Duration(milliseconds: 300),
+      );
       final dir = await getTemporaryDirectory();
-      final f = File(
-          '${dir.path}/bahan-${widget.recipe.docId}.png');
+      final f = File('${dir.path}/resep-${r.docId}.png');
       await f.writeAsBytes(bytes);
       await SharePlus.instance.share(ShareParams(
         files: [XFile(f.path)],
-        text:
-            'Bahan ${widget.recipe.title} — via MasakYuk',
+        text: 'Resep ${r.title} — via MasakYuk',
       ));
     } catch (_) {
       if (mounted) {
@@ -930,5 +863,179 @@ class _DetailScreenState extends State<DetailScreen>
             icon: Icons.error_outline);
       }
     }
+  }
+
+  /// Kartu yang dirender jadi gambar: dari judul sampai daftar bahan.
+  Widget _gambarEkspor(Recipe r) {
+    Widget pil(IconData icon, String teks) => Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(9999),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: AppColors.primary),
+              const SizedBox(width: 4),
+              Text(teks,
+                  style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.chocolate)),
+            ],
+          ),
+        );
+
+    return Container(
+      width: 380,
+      color: AppColors.cream,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.soup_kitchen,
+                    size: 24, color: Colors.white),
+              ),
+              const SizedBox(width: 10),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text.rich(TextSpan(
+                    style: TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.w800),
+                    children: [
+                      TextSpan(
+                          text: 'Masak',
+                          style:
+                              TextStyle(color: AppColors.chocolate)),
+                      TextSpan(
+                          text: 'Yuk',
+                          style: TextStyle(color: AppColors.amber)),
+                    ],
+                  )),
+                  Text('RESEP DAPUR',
+                      style: TextStyle(
+                          fontSize: 9,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.chocolateMuted)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              height: 180,
+              width: double.infinity,
+              child: AppImage(
+                  url: photoFor(r), fallbackLetter: r.title),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(r.title,
+              style: const TextStyle(
+                  fontSize: 26,
+                  height: 1.1,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.chocolate)),
+          const SizedBox(height: 4),
+          Text(r.category,
+              style: const TextStyle(
+                  fontSize: 12, color: AppColors.chocolateMuted)),
+          if (r.description.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(r.description,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.chocolateMuted)),
+          ],
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              pil(Icons.timer_outlined, r.displayDuration),
+              pil(Icons.star_rounded,
+                  '${r.displayRating} (${r.jumlahPenilai})'),
+              if (r.servings != null)
+                pil(Icons.people_outline, r.servings!),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Container(height: 1, color: const Color(0xFFE7D8CB)),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              const Text('Bahan',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.chocolate)),
+              const SizedBox(width: 6),
+              Text('(${r.ingredientsRaw.length} bahan)',
+                  style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.chocolateMuted)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...r.ingredientsRaw.map((b) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 5),
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(b,
+                          style: const TextStyle(
+                              fontSize: 13,
+                              height: 1.3,
+                              color: AppColors.chocolate)),
+                    ),
+                  ],
+                ),
+              )),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.sand,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+                'Belanja dari daftar ini • dibuat dengan MasakYuk',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 11, color: AppColors.chocolateMuted)),
+          ),
+        ],
+      ),
+    );
   }
 }
