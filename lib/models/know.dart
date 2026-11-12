@@ -10,6 +10,7 @@ class IngredientInfo {
   final String latin;
   final String karakter;
   final String simpan;
+  final String gambar; // foto dari Wikipedia; kosong = monogram
   final List<String> pairs;
   const IngredientInfo({
     required this.id,
@@ -22,6 +23,7 @@ class IngredientInfo {
     this.latin = '',
     this.karakter = '',
     this.simpan = '',
+    this.gambar = '',
     this.pairs = const [],
   });
   factory IngredientInfo.fromJson(Map<String, dynamic> j) {
@@ -38,7 +40,23 @@ class IngredientInfo {
       latin: j['latin'] as String? ?? '',
       karakter: j['karakter'] as String? ?? '',
       simpan: j['simpan'] as String? ?? '',
+      gambar: j['gambar'] as String? ?? '',
       pairs: strList(j['pairs']),
+    );
+  }
+
+  /// Entri hasil impor Wikipedia (GET /api/v1/ensiklopedia).
+  factory IngredientInfo.dariServer(Map<String, dynamic> j) {
+    final nama = (j['nama'] ?? '').toString();
+    return IngredientInfo(
+      id: nama.toLowerCase(),
+      nama: nama,
+      asal: '',
+      kat: (j['tipe'] ?? 'bahan') == 'masakan' ? 'Masakan' : 'Bahan',
+      desc: (j['ringkasan'] ?? '').toString(),
+      fakta: '',
+      wiki: (j['sumber_url'] ?? '').toString(),
+      gambar: (j['gambar_url'] ?? '').toString(),
     );
   }
 }

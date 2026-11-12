@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/app_image.dart';
 import '../../core/widgets/recipe_card.dart';
 import '../../data/money.dart';
 import '../../data/recipe_repository.dart';
@@ -49,7 +50,7 @@ class _EncyclopediaScreenState
   @override
   Widget build(BuildContext context) {
     final repo = widget.repo;
-    final nBahan = repo.encyclopedia.length;
+    final nBahan = repo.ensiklopedia.length;
     final allRes = repo.search({});
     final nResep = allRes.top3.length + allRes.rest.length;
     final nTempat = repo.places.length;
@@ -214,11 +215,12 @@ class _EncyclopediaScreenState
 
   List<Widget> _bahanTab() {
     final repo = widget.repo;
+    final semua = repo.ensiklopedia;
     final kats = [
       'Semua',
-      ...{for (final e in repo.encyclopedia) e.kat}
+      ...{for (final e in semua) e.kat}
     ];
-    final items = repo.encyclopedia.where((e) {
+    final items = semua.where((e) {
       final okQ = _q.isEmpty ||
           e.nama.toLowerCase().contains(_q) ||
           e.desc.toLowerCase().contains(_q);
@@ -256,7 +258,7 @@ class _EncyclopediaScreenState
       ),
       const SizedBox(height: 16),
       _sectionTitle(
-          'Bahan Dapur Populer', '(${items.length} Bahan)'),
+          'Ensiklopedia Kuliner', '(${items.length} Entri)'),
       const SizedBox(height: 12),
       GridView.builder(
         shrinkWrap: true,
@@ -303,19 +305,27 @@ class _EncyclopediaScreenState
                               BorderRadius.circular(
                                   18),
                         ),
-                        child: Center(
-                          child: Text(
-                            e.nama.isEmpty
-                                ? '?'
-                                : e.nama[0],
-                            style: const TextStyle(
-                                fontSize: 40,
-                                fontWeight:
-                                    FontWeight.w800,
-                                color: Color(
-                                    0xFFDEC0B7)),
-                          ),
-                        ),
+                        child: e.gambar.isEmpty
+                            ? Center(
+                                child: Text(
+                                  e.nama.isEmpty
+                                      ? '?'
+                                      : e.nama[0],
+                                  style: const TextStyle(
+                                      fontSize: 40,
+                                      fontWeight:
+                                          FontWeight.w800,
+                                      color: Color(
+                                          0xFFDEC0B7)),
+                                ),
+                              )
+                            : ClipRRect(
+                                borderRadius:
+                                    BorderRadius.circular(18),
+                                child: AppImage(
+                                    url: e.gambar,
+                                    fallbackLetter: e.nama),
+                              ),
                       ),
                       Positioned(
                         left: 8,

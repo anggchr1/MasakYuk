@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/app_image.dart';
 import '../../data/recipe_repository.dart';
 import '../../models/know.dart';
 import '../detail/detail_view.dart';
@@ -75,17 +76,23 @@ class _ArticleScreenState extends State<ArticleScreen>
                     bottomLeft: Radius.circular(32),
                     bottomRight: Radius.circular(32),
                   ),
-                  child: Center(
-                    child: Text(
-                      info.nama.isEmpty
-                          ? '?'
-                          : info.nama[0],
-                      style: const TextStyle(
-                          fontSize: 120,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFFDEC0B7)),
-                    ),
-                  ),
+                  child: info.gambar.isEmpty
+                      ? Center(
+                          child: Text(
+                            info.nama.isEmpty
+                                ? '?'
+                                : info.nama[0],
+                            style: const TextStyle(
+                                fontSize: 120,
+                                fontWeight:
+                                    FontWeight.w800,
+                                color:
+                                    Color(0xFFDEC0B7)),
+                          ),
+                        )
+                      : AppImage(
+                          url: info.gambar,
+                          fallbackLetter: info.nama),
                 ),
               ),
               Positioned(
@@ -228,7 +235,7 @@ class _ArticleScreenState extends State<ArticleScreen>
                             AppColors.chocolateMuted)),
                 const SizedBox(height: 12),
                 _factPill(Icons.explore, 'ASAL USUL',
-                    info.asal),
+                    info.asal.isEmpty ? 'Nusantara & dunia' : info.asal),
                 const SizedBox(height: 8),
                 _factPill(Icons.local_fire_department,
                     'KARAKTER',
@@ -299,7 +306,10 @@ class _ArticleScreenState extends State<ArticleScreen>
                 ),
                 const SizedBox(height: 12),
                 _factCard(AppColors.primary,
-                    'Tahukah Kamu?', info.fakta),
+                    'Tahukah Kamu?',
+                    info.fakta.isEmpty
+                        ? 'Ringkasan ini disarikan dari Wikipedia Indonesia. Buka tautan di bawah untuk membaca artikel lengkapnya.'
+                        : info.fakta),
                 const SizedBox(height: 12),
                 _factCard(AppColors.amber, 'Cara Simpan',
                     'Simpan dalam wadah tertutup agar aroma tidak menguap.'),
@@ -415,19 +425,20 @@ class _ArticleScreenState extends State<ArticleScreen>
                   ),
                 ),
                 const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => launchUrl(
-                        Uri.parse(info.wiki),
-                        mode: LaunchMode
-                            .externalApplication),
-                    icon: const Icon(Icons.open_in_new,
-                        size: 18),
-                    label: const Text(
-                        'Baca di Wikipedia'),
+                if (info.wiki.isNotEmpty)
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => launchUrl(
+                          Uri.parse(info.wiki),
+                          mode: LaunchMode
+                              .externalApplication),
+                      icon: const Icon(Icons.open_in_new,
+                          size: 18),
+                      label: const Text(
+                          'Baca di Wikipedia'),
+                    ),
                   ),
-                ),
                 const SizedBox(height: 24),
               ],
             ),
@@ -534,10 +545,11 @@ class _ArticleScreenState extends State<ArticleScreen>
 
   IngredientInfo? _findIngredient(String name) {
     final q = name.toLowerCase();
-    for (final e in widget.repo.encyclopedia) {
+    final semua = widget.repo.ensiklopedia;
+    for (final e in semua) {
       if (e.nama.toLowerCase() == q) return e;
     }
-    for (final e in widget.repo.encyclopedia) {
+    for (final e in semua) {
       if (e.nama.toLowerCase().contains(q) ||
           q.contains(e.nama.toLowerCase())) {
         return e;

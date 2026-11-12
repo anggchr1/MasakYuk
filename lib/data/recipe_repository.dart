@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/api/api_client.dart';
 import '../models/know.dart';
 import '../models/recipe.dart';
@@ -21,6 +22,9 @@ class RecipeRepository extends ChangeNotifier {
   final Set<String> _favorites = {};
   final List<Map<String, dynamic>> _prices = [];
   final List<IngredientInfo> encyclopedia = [];
+  /// Impor Wikipedia (bahan & masakan); cache lokal dibuat dari respons API.
+  final List<IngredientInfo> _ensiklopediaServer = [];
+  static const _kEnsiklopedia = 'ensiklopedia.cache';
   final List<PlaceInfo> places = [];
   final List<NotifItem> notifs = [];
   bool loaded = false;
@@ -35,6 +39,16 @@ class RecipeRepository extends ChangeNotifier {
 
   List<Recipe> get customs => List.unmodifiable(_custom);
   bool isFavorite(String docId) => _favorites.contains(docId);
+
+  /// Ensiklopedia tampil: kurasi lokal + impor Wikipedia (nama ganda dibuang).
+  List<IngredientInfo> get ensiklopedia {
+    final lokal = {for (final e in encyclopedia) e.nama.toLowerCase()};
+    return [
+      ...encyclopedia,
+      ..._ensiklopediaServer
+          .where((e) => !lokal.contains(e.nama.toLowerCase())),
+    ];
+  }
 
   List<Recipe> get favorites => [
         ..._system.where((r) => _favorites.contains(r.docId)),
@@ -98,6 +112,7 @@ class RecipeRepository extends ChangeNotifier {
     final pl =
         (await loadJson('assets/places.json')).cast<Map<String, dynamic>>();
     places.addAll(pl.map(PlaceInfo.fromJson));
+    await _muatCacheEnsiklopedia();
     notifs.addAll([
       NotifItem(
         id: 'n0',
@@ -116,6 +131,43 @@ class RecipeRepository extends ChangeNotifier {
       ),
     ]);
     loaded = true;
+    notifyListeners();
+    _segarkanEnsiklopedia(); // jaringan; gagal = pakai cache/assets
+  }
+
+  /// Baca snapshot ensiklopedia terakhir dari perangkat (mode offline).
+  Future<void> _muatCacheEnsiklopedia() async {
+    try {
+      final p = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 3));
+      final s = p.getString(_kEnsiklopedia);
+      if (s == null) return;
+      _isiEnsiklopedia(json.decode(s) as List);
+    } catch (e) {
+      debugPrint('Gagal memuat cache ensiklopedia: $e');
+    }
+  }
+
+  /// Segarkan dari server, lalu simpan supaya bisa dibuka tanpa internet.
+  Future<void> _segarkanEnsiklopedia() async {
+    try {
+      final res = await api.get('/api/v1/ensiklopedia');
+      final data = ((res['data'] as List?) ?? (res as List?) ?? const [])
+          .cast<Map<String, dynamic>>();
+      if (data.isEmpty) return;
+      _isiEnsiklopedia(data);
+      final p = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 3));
+      await p.setString(_kEnsiklopedia, json.encode(data));
+    } catch (e) {
+      debugPrint('Ensiklopedia mode offline: $e');
+    }
+  }
+
+  void _isiEnsiklopedia(List data) {
+    _ensiklopediaServer
+      ..clear()
+      ..addAll(data.cast<Map<String, dynamic>>().map(IngredientInfo.dariServer));
     notifyListeners();
   }
 
