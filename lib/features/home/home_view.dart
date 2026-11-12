@@ -29,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen>
   late final Animation<double> _fade;
   late final HomeProvider _hp;
   final _titleCtrl = TextEditingController();
+  final _bahanCtrl = TextEditingController();
   final _budgetCtrl =
       TextEditingController(text: '25000');
 
@@ -42,6 +43,12 @@ class _HomeScreenState extends State<HomeScreen>
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
     _hp = HomeProvider(widget.repo);
+  }
+
+  /// Bahan yang diketik langsung masuk ke daftar terpilih di bawah kolom.
+  void _tambahBahan() {
+    _hp.tambah(_bahanCtrl.text);
+    _bahanCtrl.clear();
   }
 
   void _openResults({
@@ -312,54 +319,87 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children:
-                HomeProvider.bahanChips.map((b) {
-              final sel = _hp.picked.contains(b);
-              final label =
-                  b[0].toUpperCase() + b.substring(1);
-              return GestureDetector(
-                onTap: () => _hp.togglePick(b),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: sel
-                        ? Colors.white
-                        : Colors.white
-                            .withValues(alpha: 0.2),
-                    borderRadius:
-                        BorderRadius.circular(9999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                          sel
-                              ? Icons.check_circle
-                              : Icons.add_circle_outline,
-                          size: 12,
-                          color: sel
-                              ? const Color(0xFF7F2500)
-                              : Colors.white),
-                      const SizedBox(width: 4),
-                      Text(label,
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: sel
-                                  ? FontWeight.w700
-                                  : FontWeight.w400,
-                              color: sel
-                                  ? const Color(0xFF7F2500)
-                                  : Colors.white)),
-                    ],
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _bahanCtrl,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _tambahBahan(),
+                  style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF7F2500)),
+                  decoration: InputDecoration(
+                    hintText: 'Ketik bahan, misal telur',
+                    hintStyle: TextStyle(
+                        fontSize: 12,
+                        color: const Color(0xFF7F2500)
+                            .withValues(alpha: 0.5)),
+                    isDense: true,
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9999),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
-              );
-            }).toList(),
+              ),
+              const SizedBox(width: 8),
+              Material(
+                color: Colors.white,
+                shape: const CircleBorder(),
+                child: IconButton(
+                  tooltip: 'Tambah bahan',
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.add,
+                      color: Color(0xFF7F2500)),
+                  onPressed: _tambahBahan,
+                ),
+              ),
+            ],
           ),
+          if (_hp.picked.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _hp.picked.map((b) {
+                final label = b[0].toUpperCase() + b.substring(1);
+                return GestureDetector(
+                  onTap: () => _hp.togglePick(b),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(9999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle,
+                            size: 12,
+                            color: Color(0xFF7F2500)),
+                        const SizedBox(width: 4),
+                        Text(label,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF7F2500))),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.close,
+                            size: 12,
+                            color: Color(0xFF7F2500)),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
@@ -803,6 +843,7 @@ class _HomeScreenState extends State<HomeScreen>
   void dispose() {
     _controller.dispose();
     _titleCtrl.dispose();
+    _bahanCtrl.dispose();
     _budgetCtrl.dispose();
     _hp.dispose();
     super.dispose();

@@ -57,7 +57,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       builder: (_, _) {
         final favs = widget.repo.favorites;
         final mine = widget.repo.customs;
-        var items = _mine ? mine : favs;
+        // Salinan: `customs` unmodifiable, sedangkan daftar ini di-sort.
+        var items = List<Recipe>.of(_mine ? mine : favs);
         final q = _ctrl.text.toLowerCase();
         if (q.isNotEmpty) {
           items = items
@@ -68,8 +69,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           case 'Nama A-Z':
             items.sort((a, b) => a.title.compareTo(b.title));
           case 'Waktu Tersingkat':
-            items.sort((a, b) => a.stepsList.length
-                .compareTo(b.stepsList.length));
+            items.sort((a, b) => _menit(a).compareTo(_menit(b)));
           case 'Paling Populer':
             items.sort((a, b) => b.loves.compareTo(a.loves));
           default:
@@ -191,6 +191,18 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       },
       ),
     );
+  }
+
+  /// Menit dari teks durasi ("±35 mnt", "1 jam 15 mnt") untuk pengurutan.
+  int _menit(Recipe r) {
+    final teks = r.displayDuration.toLowerCase();
+    final menit = RegExp(r'(\d+)\s*mnt').firstMatch(teks);
+    if (menit != null) {
+      final jam = RegExp(r'(\d+)\s*jam').firstMatch(teks);
+      return int.parse(menit.group(1)!) +
+          (jam == null ? 0 : int.parse(jam.group(1)!) * 60);
+    }
+    return int.tryParse(RegExp(r'\d+').stringMatch(teks) ?? '') ?? 0;
   }
 
   String? _priceOf(Recipe r) {

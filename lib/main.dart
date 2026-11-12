@@ -133,11 +133,29 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   late int _tab = widget.initialTab;
   late int _prevTab;
+  /// Riwayat tab supaya tombol back HP kembali ke tab sebelumnya.
+  final List<int> _history = [];
 
   @override
   void initState() {
     super.initState();
     _prevTab = widget.initialTab;
+  }
+
+  void _pindah(int i) {
+    if (i == _tab) return;
+    setState(() {
+      _prevTab = _tab;
+      _history.add(_tab);
+      _tab = i;
+    });
+  }
+
+  void _kembali() {
+    setState(() {
+      _prevTab = _tab;
+      _tab = _history.isEmpty ? 0 : _history.removeLast();
+    });
   }
 
   Widget _pageAt(int i) {
@@ -175,45 +193,45 @@ class _HomeShellState extends State<HomeShell> {
         ? const Offset(1.0, 0.0)
         : const Offset(-1.0, 0.0);
 
-    return Scaffold(
-      body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          switchInCurve: Curves.easeInOut,
-          switchOutCurve: Curves.easeInOut,
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            return SlideTransition(
-              position: Tween<Offset>(
-                begin: slideFrom,
-                end: Offset.zero,
-              ).animate(animation),
-              child: FadeTransition(
-                opacity: animation,
-                child: child,
-              ),
-            );
-          },
-          child: IndexedStack(
-            key: ValueKey(_tab),
-            index: _tab,
-            children: [
-              _pageAt(0),
-              _pageAt(1),
-              _pageAt(2),
-              _pageAt(3),
-            ],
+    return PopScope(
+      canPop: _tab == 0 && _history.isEmpty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _kembali();
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            switchInCurve: Curves.easeInOut,
+            switchOutCurve: Curves.easeInOut,
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: slideFrom,
+                  end: Offset.zero,
+                ).animate(animation),
+                child: FadeTransition(
+                  opacity: animation,
+                  child: child,
+                ),
+              );
+            },
+            child: IndexedStack(
+              key: ValueKey(_tab),
+              index: _tab,
+              children: [
+                _pageAt(0),
+                _pageAt(1),
+                _pageAt(2),
+                _pageAt(3),
+              ],
+            ),
           ),
         ),
-      ),
-      bottomNavigationBar: BottomNav(
-        index: _tab,
-        onTap: (i) {
-          if (i == _tab) return;
-          setState(() {
-            _prevTab = _tab;
-            _tab = i;
-          });
-        },
+        bottomNavigationBar: BottomNav(
+          index: _tab,
+          onTap: _pindah,
+        ),
       ),
     );
   }

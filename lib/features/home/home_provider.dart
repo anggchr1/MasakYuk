@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../data/recipe_repository.dart';
 
-/// State Home v2: chip bahan (toggle manual) + query + chip kategori.
+/// State Home v2: bahan yang diketik user + chip kategori.
 /// TIDAK auto-search: hasil dibuka lewat layar Hasil (pill / submit / chip).
 class HomeProvider extends ChangeNotifier {
   final RecipeRepository repo;
@@ -24,17 +24,6 @@ class HomeProvider extends ChangeNotifier {
     'Sayuran',
   ];
 
-  static const bahanChips = [
-    'telur',
-    'ayam',
-    'cabai',
-    'bawang',
-    'tahu',
-    'tempe',
-    'tomat',
-    'santan',
-  ];
-
   void setChip(String c) {
     chip = c;
     notifyListeners();
@@ -50,6 +39,20 @@ class HomeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void tambah(String teks) {
+    picked.addAll(_kataBahan(teks));
+    notifyListeners();
+  }
+
+  /// "Telor" -> telur; kata < 3 huruf (di, ke) dibuang.
+  static const _sinonim = {'telor': 'telur', 'cabe': 'cabai'};
+
+  static Iterable<String> _kataBahan(String teks) => teks
+      .toLowerCase()
+      .split(RegExp(r'[^a-z]+'))
+      .where((w) => w.length >= 3)
+      .map((w) => _sinonim[w] ?? w);
+
   void togglePick(String b) {
     if (!picked.remove(b)) picked.add(b);
     notifyListeners();
@@ -62,12 +65,6 @@ class HomeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Gabungan kata ketik + chip terpilih (dipakai saat pill ditekan).
-  Set<String> get inputs => {
-        ...query
-            .toLowerCase()
-            .split(RegExp(r'[^a-z]+'))
-            .where((w) => w.length >= 3),
-        ...picked,
-      };
+  /// Bahan yang diketik user — dipakai saat tombol "Cari" ditekan.
+  Set<String> get inputs => {...picked};
 }
