@@ -74,7 +74,9 @@ class _DetailScreenState extends State<DetailScreen>
       setState(() {
         _ulasan = ((j['data'] as List?) ?? const [])
             .cast<Map<String, dynamic>>();
-        _rata = (j['rating_rata'] as num?)?.toDouble() ?? 0;
+        _rata = double.tryParse(
+                (j['rating_rata'] ?? '').toString()) ??
+            0;
         _jumlah = (j['jumlah_penilaian'] as num?)?.toInt() ?? 0;
         _nilaiSaya = (j['nilai_saya'] as num?)?.toInt() ?? 0;
         _pemilik = j['pemilik_saya'] == true || _pemilik;
@@ -99,7 +101,9 @@ class _DetailScreenState extends State<DetailScreen>
       if (!mounted) return;
       setState(() {
         _nilaiSaya = skor;
-        _rata = (j['rating_rata'] as num?)?.toDouble() ?? _rata;
+        _rata = double.tryParse(
+                (j['rating_rata'] ?? '').toString()) ??
+            _rata;
         _jumlah = (j['jumlah_penilai'] as num?)?.toInt() ?? _jumlah;
       });
       AppToast.show(

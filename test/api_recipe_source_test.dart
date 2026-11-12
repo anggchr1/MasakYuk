@@ -86,6 +86,19 @@ void main() {
     expect(r.isPublished, isFalse);
   });
 
+  test('rating dari API berupa string tetap terbaca', () {
+    final r = ApiRecipeSource().toRecipe({
+      'id': 12,
+      'judul': 'Nasgor',
+      'rating_rata': '5.0000', // avg() Laravel dikirim sebagai string
+      'jumlah_penilai': 1,
+    });
+
+    expect(r.ratingRata, 5.0);
+    expect(r.jumlahPenilai, 1);
+    expect(r.displayRating, '5.0');
+  });
+
   test('bahanPayload memecah jumlah & satuan', () {
     final api = ApiRecipeSource();
     expect(api.bahanPayload('2 siung bawang putih'),

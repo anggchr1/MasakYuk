@@ -91,7 +91,7 @@ class Recipe {
           ? null
           : DateTime.tryParse(j['createdAt'] as String),
       photoUrl: ((j['gambar_utama'] as Map?)?['url'])?.toString(),
-      ratingRata: _num(j['rating_rata']),
+      ratingRata: double.tryParse((j['rating_rata'] ?? '').toString()),
       jumlahPenilai: (j['jumlah_penilai'] as num?)?.toInt() ?? 0,
     );
   }
