@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
@@ -886,6 +886,13 @@ class _DetailScreenState extends State<DetailScreen>
           AppToast.show(context, 'Tersimpan!',
               'Gambar resep ada di Galeri HP.',
               icon: Icons.download_done);
+        }
+      } on MissingPluginException {
+        // Plugin native belum ikut di APK terpasang; hot restart tak cukup.
+        if (mounted) {
+          AppToast.show(context, 'Perlu build ulang',
+              'Hentikan flutter run, lalu jalankan ulang (bukan hot restart).',
+              icon: Icons.build_outlined);
         }
       } catch (_) {
         if (mounted) {
