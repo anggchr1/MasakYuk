@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
@@ -833,8 +835,87 @@ class _DetailScreenState extends State<DetailScreen>
     );
   }
 
-  /// Export kartu resep (judul, meta, foto, bahan) → PNG → share/simpan.
+  /// Export kartu resep → pilih simpan ke Galeri atau bagikan.
   Future<void> _export() async {
+    final aksi = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.download_outlined),
+              title: const Text('Simpan ke Galeri'),
+              subtitle: const Text('Gambar resep masuk ke Galeri HP'),
+              onTap: () => Navigator.pop(ctx, 'galeri'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: const Text('Bagikan'),
+              subtitle:
+                  const Text('Kirim lewat WhatsApp, Drive, dll.'),
+              onTap: () => Navigator.pop(ctx, 'bagikan'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (aksi == null || !mounted) return;
+
+    final bytes = await _renderKartu();
+    if (bytes == null) {
+      if (mounted) {
+        AppToast.show(context, 'Export gagal', 'Coba lagi sesaat.',
+            icon: Icons.error_outline);
+      }
+      return;
+    }
+
+    if (aksi == 'galeri') {
+      try {
+        if (!await Gal.hasAccess()) {
+          if (!await Gal.requestAccess()) {
+            throw 'akses galeri ditolak';
+          }
+        }
+        await Gal.putImageBytes(bytes,
+            name: 'resep-${widget.recipe.docId}');
+        if (mounted) {
+          AppToast.show(context, 'Tersimpan!',
+              'Gambar resep ada di Galeri HP.',
+              icon: Icons.download_done);
+        }
+      } catch (_) {
+        if (mounted) {
+          AppToast.show(context, 'Gagal menyimpan',
+              'Izinkan akses Galeri lalu coba lagi.',
+              icon: Icons.error_outline);
+        }
+      }
+      return;
+    }
+
+    try {
+      final dir = await getTemporaryDirectory();
+      final f = File(
+          '${dir.path}/resep-${widget.recipe.docId}.png');
+      await f.writeAsBytes(bytes);
+      await SharePlus.instance.share(ShareParams(
+        files: [XFile(f.path)],
+        text: 'Resep ${widget.recipe.title} — via MasakYuk',
+      ));
+    } catch (_) {
+      if (mounted) {
+        AppToast.show(context, 'Export gagal', 'Coba lagi sesaat.',
+            icon: Icons.error_outline);
+      }
+    }
+  }
+
+  /// Render kartu resep jadi PNG (foto di-precache dulu).
+  Future<Uint8List?> _renderKartu() async {
     final r = widget.recipe;
     try {
       try {
@@ -842,26 +923,15 @@ class _DetailScreenState extends State<DetailScreen>
       } catch (_) {
         // Foto gagal dimuat: kartu tetap dibuat dengan monogram.
       }
-      if (!mounted) return;
-      final bytes = await _shot.captureFromWidget(
+      if (!mounted) return null;
+      return await _shot.captureFromWidget(
         _gambarEkspor(r),
         context: context,
         pixelRatio: 3,
         delay: const Duration(milliseconds: 300),
       );
-      final dir = await getTemporaryDirectory();
-      final f = File('${dir.path}/resep-${r.docId}.png');
-      await f.writeAsBytes(bytes);
-      await SharePlus.instance.share(ShareParams(
-        files: [XFile(f.path)],
-        text: 'Resep ${r.title} — via MasakYuk',
-      ));
     } catch (_) {
-      if (mounted) {
-        AppToast.show(context, 'Export gagal',
-            'Coba lagi sesaat.',
-            icon: Icons.error_outline);
-      }
+      return null;
     }
   }
 
