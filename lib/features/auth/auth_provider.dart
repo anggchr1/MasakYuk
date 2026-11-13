@@ -117,6 +117,7 @@ class AuthProvider extends ChangeNotifier {
       await _simpanSesi(token);
       await repo.muatResepMilikku();
       await repo.muatFavorit();
+      await repo.muatNotifikasi();
     } catch (e) {
       error = _pesan(e);
     } finally {

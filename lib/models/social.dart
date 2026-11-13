@@ -25,4 +25,18 @@ class NotifItem {
     this.recipeId,
     this.read = false,
   });
+
+  /// Notifikasi dari GET /api/v1/notifikasi (hanya komentar).
+  factory NotifItem.dariServer(Map<String, dynamic> j) => NotifItem(
+        id: (j['id'] ?? '').toString(),
+        kind: (j['jenis'] ?? 'komentar').toString(),
+        title: (j['judul'] ?? '').toString(),
+        desc: (j['isi'] ?? '').toString(),
+        at: DateTime.tryParse((j['created_at'] ?? '').toString())?.toLocal() ??
+            DateTime.now(),
+        recipeId: j['tipe_terkait'] == 'resep' && j['id_terkait'] != null
+            ? j['id_terkait'].toString()
+            : null,
+        read: j['dibaca'] == true || j['dibaca'] == 1,
+      );
 }

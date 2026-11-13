@@ -116,23 +116,6 @@ class RecipeRepository extends ChangeNotifier {
         (await loadJson('assets/places.json')).cast<Map<String, dynamic>>();
     places.addAll(pl.map(PlaceInfo.fromJson));
     await _muatCacheEnsiklopedia();
-    notifs.addAll([
-      NotifItem(
-        id: 'n0',
-        kind: 'sistem',
-        title: 'Selamat datang di MasakYuk!',
-        desc: 'Cari resep dari bahan kulkasmu, lalu simpan favoritmu.',
-        at: DateTime.now().subtract(const Duration(hours: 5)),
-      ),
-      NotifItem(
-        id: 'n1',
-        kind: 'sistem',
-        title: 'Tips Dapur Nusantara',
-        desc: 'Simpan bumbu marinasi minimal 20 menit agar lebih meresap.',
-        at: DateTime.now().subtract(const Duration(days: 1)),
-        read: true,
-      ),
-    ]);
     loaded = true;
     notifyListeners();
     muatEnsiklopedia(); // jaringan; gagal = pakai cache/assets
@@ -269,37 +252,49 @@ class RecipeRepository extends ChangeNotifier {
   // ---------- Notifikasi in-app ----------
   int get unreadCount => notifs.where((n) => !n.read).length;
 
-  void pushNotif({
-    required String kind,
-    required String title,
-    required String desc,
-    String? recipeId,
-  }) {
-    notifs.insert(
-        0,
-        NotifItem(
-          id: 'n${DateTime.now().millisecondsSinceEpoch}',
-          kind: kind,
-          title: title,
-          desc: desc,
-          at: DateTime.now(),
-          recipeId: recipeId,
-        ));
-    notifyListeners();
+  /// Ambil notifikasi komentar dari server (butuh login).
+  Future<void> muatNotifikasi() async {
+    if (api.token == null) {
+      notifs.clear();
+      notifyListeners();
+      return;
+    }
+    try {
+      final res = await api.get('/api/v1/notifikasi');
+      final list = ((res is Map ? res['data'] : res) as List?) ?? const [];
+      notifs
+        ..clear()
+        ..addAll(list
+            .cast<Map<String, dynamic>>()
+            .map(NotifItem.dariServer));
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Gagal memuat notifikasi: $e');
+    }
   }
 
-  void markRead(String id) {
+  Future<void> markRead(String id) async {
     for (final n in notifs) {
       if (n.id == id) n.read = true;
     }
     notifyListeners();
+    try {
+      await api.post('/api/v1/notifikasi/$id/baca');
+    } catch (e) {
+      debugPrint('Gagal menandai notifikasi dibaca: $e');
+    }
   }
 
-  void markAllRead() {
+  Future<void> markAllRead() async {
     for (final n in notifs) {
       n.read = true;
     }
     notifyListeners();
+    try {
+      await api.post('/api/v1/notifikasi/baca-semua');
+    } catch (e) {
+      debugPrint('Gagal menandai semua notifikasi dibaca: $e');
+    }
   }
 
   /// Hasil urut skor tertinggi. top3 = 3 utama, rest = "lihat lainnya".
@@ -445,13 +440,6 @@ class RecipeRepository extends ChangeNotifier {
     );
     if (publish) r = await _apiResep.publish(r.docId);
     _custom.insert(0, r);
-    pushNotif(
-      kind: 'sistem',
-      title: publish ? 'Resep Diterbitkan!' : 'Draf tersimpan',
-      desc: publish
-          ? 'Karyamu kini bisa ditemukan pengguna lain.'
-          : 'Lanjutkan lagi kapan pun dari Resep Saya.',
-    );
     notifyListeners();
   }
 
@@ -539,6 +527,7 @@ class RecipeRepository extends ChangeNotifier {
   void logout() {
     _custom.clear();
     _favorites.clear();
+    notifs.clear();
     userAvatarUrl = null;
     notifyListeners();
   }

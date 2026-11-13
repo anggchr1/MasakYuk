@@ -60,6 +60,7 @@ class _MasakYukAppState extends State<MasakYukApp> {
       if (_auth.loggedIn) {
         _repo.muatResepMilikku();
         _repo.muatFavorit();
+        _repo.muatNotifikasi();
       }
     });
   }

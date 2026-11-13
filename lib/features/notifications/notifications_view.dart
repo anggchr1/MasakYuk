@@ -33,6 +33,8 @@ class _NotificationsScreenState
     );
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
+    // Ambil notifikasi terbaru tiap layar dibuka.
+    widget.repo.muatNotifikasi();
   }
 
   @override
@@ -163,7 +165,7 @@ class _NotificationsScreenState
                           title:
                               'Belum ada notifikasi',
                           desc:
-                              'Komentar dan rating di resepmu akan muncul di sini.',
+                              'Komentar baru di resepmu akan muncul di sini.',
                         )
                       else ...[
                         ..._group(
