@@ -25,4 +25,29 @@ void main() {
     expect(e.gambar, isEmpty);
     expect(e.wiki, isEmpty);
   });
+
+  test('respons API berupa array langsung terbaca', () {
+    final list = ensiklopediaDariRespons([
+      {'tipe': 'bahan', 'nama': 'Kunyit'},
+      {'tipe': 'masakan', 'nama': 'Rendang'},
+    ]);
+
+    expect(list.length, 2);
+    expect(list.last.kat, 'Masakan');
+  });
+
+  test('respons API berbentuk {data: [...]} tetap terbaca', () {
+    final list = ensiklopediaDariRespons({
+      'data': [
+        {'nama': 'Kencur'},
+      ],
+    });
+
+    expect(list.single.nama, 'Kencur');
+  });
+
+  test('respons kosong atau tak dikenal tidak melempar error', () {
+    expect(ensiklopediaDariRespons(null), isEmpty);
+    expect(ensiklopediaDariRespons(<String, dynamic>{}), isEmpty);
+  });
 }

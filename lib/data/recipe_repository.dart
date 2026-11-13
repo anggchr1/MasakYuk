@@ -145,7 +145,7 @@ class RecipeRepository extends ChangeNotifier {
           .timeout(const Duration(seconds: 3));
       final s = p.getString(_kEnsiklopedia);
       if (s == null) return;
-      _isiEnsiklopedia(json.decode(s) as List);
+      _isiEnsiklopedia(ensiklopediaDariRespons(json.decode(s)));
     } catch (e) {
       debugPrint('Gagal memuat cache ensiklopedia: $e');
     }
@@ -156,8 +156,7 @@ class RecipeRepository extends ChangeNotifier {
   Future<void> muatEnsiklopedia() async {
     try {
       final res = await api.get('/api/v1/ensiklopedia');
-      final data = ((res['data'] as List?) ?? (res as List?) ?? const [])
-          .cast<Map<String, dynamic>>();
+      final data = ensiklopediaDariRespons(res);
       if (data.isEmpty) return;
       _isiEnsiklopedia(data);
       final p = await SharedPreferences.getInstance()
@@ -168,10 +167,10 @@ class RecipeRepository extends ChangeNotifier {
     }
   }
 
-  void _isiEnsiklopedia(List data) {
+  void _isiEnsiklopedia(List<IngredientInfo> data) {
     _ensiklopediaServer
       ..clear()
-      ..addAll(data.cast<Map<String, dynamic>>().map(IngredientInfo.dariServer));
+      ..addAll(data);
     notifyListeners();
   }
 

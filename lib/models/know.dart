@@ -61,6 +61,15 @@ class IngredientInfo {
   }
 }
 
+/// Endpoint mengirim array langsung; bentuk {data: [...]} juga diterima.
+List<IngredientInfo> ensiklopediaDariRespons(dynamic res) {
+  final list = res is Map ? res['data'] : res;
+  return ((list as List?) ?? const [])
+      .cast<Map<String, dynamic>>()
+      .map(IngredientInfo.dariServer)
+      .toList();
+}
+
 /// Pasangan default per kategori (dipakai bila artikel tak menyebut).
 List<String> defaultPairs(String kat) {
   switch (kat) {
