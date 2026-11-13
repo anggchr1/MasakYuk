@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/api/api_client.dart';
+import '../../core/push/push_service.dart';
 import '../../data/recipe_repository.dart';
 
 /// Login Google di app = login Google di web:
@@ -118,6 +119,7 @@ class AuthProvider extends ChangeNotifier {
       await repo.muatResepMilikku();
       await repo.muatFavorit();
       await repo.muatNotifikasi();
+      await PushService.daftarkan(repo);
     } catch (e) {
       error = _pesan(e);
     } finally {
@@ -140,6 +142,7 @@ class AuthProvider extends ChangeNotifier {
       // Cabut token di server; gagal pun tetap keluar di app.
       api.post('/api/v1/auth/keluar').catchError((_) => null);
     }
+    PushService.lepas();
     api.token = null;
     repo.logout();
     repo.muatUlangPublik(); // daftar tamu memuat resep yang baru terbit
@@ -153,6 +156,7 @@ class AuthProvider extends ChangeNotifier {
   /// Hapus akun di server (lunak + cabut token), lalu bersihkan sesi lokal.
   Future<void> hapusAkun() async {
     await api.delete('/api/v1/saya');
+    await PushService.lepas();
     api.token = null;
     repo.logout();
     repo.muatUlangPublik();

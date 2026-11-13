@@ -297,6 +297,16 @@ class RecipeRepository extends ChangeNotifier {
     }
   }
 
+  /// Daftarkan token FCM perangkat ke akun yang sedang login.
+  Future<void> daftarkanPerangkat(String token) async {
+    if (api.token == null) return;
+    try {
+      await api.post('/api/v1/perangkat', body: {'token': token});
+    } catch (e) {
+      debugPrint('Gagal mendaftarkan perangkat: $e');
+    }
+  }
+
   /// Hasil urut skor tertinggi. top3 = 3 utama, rest = "lihat lainnya".
   ({List<Recipe> top3, List<Recipe> rest}) search(Set<String> inputs) {
     final scored = _pool

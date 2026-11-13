@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import 'core/theme/app_theme.dart';
+import 'core/push/push_service.dart';
 import 'core/widgets/bottom_nav.dart';
 import 'data/recipe_repository.dart';
 import 'features/auth/auth_provider.dart';
@@ -13,9 +14,10 @@ import 'features/favorites/favorites_view.dart';
 import 'features/home/home_view.dart';
 import 'features/profile/profile_view.dart';
 
-void main() {
+void main() async {
   timeago.setLocaleMessages('id', timeago.IdMessages());
   WidgetsFlutterBinding.ensureInitialized();
+  await PushService.inisialisasi();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
@@ -61,6 +63,7 @@ class _MasakYukAppState extends State<MasakYukApp> {
         _repo.muatResepMilikku();
         _repo.muatFavorit();
         _repo.muatNotifikasi();
+        PushService.daftarkan(_repo);
       }
     });
   }
