@@ -39,6 +39,10 @@ class _EncyclopediaScreenState
     );
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
+    // Segarkan tiap layar dibuka: data Wikipedia bisa belum ada saat app start.
+    widget.repo.muatEnsiklopedia().then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   String? _priceOf(Recipe r) {
@@ -259,6 +263,16 @@ class _EncyclopediaScreenState
       const SizedBox(height: 16),
       _sectionTitle(
           'Ensiklopedia Kuliner', '(${items.length} Entri)'),
+      if (!repo.ensiklopediaDaring)
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(
+            'Konten Wikipedia belum termuat. Pastikan internet/server aktif, '
+            'lalu buka ulang halaman ini.',
+            style: TextStyle(
+                fontSize: 11, color: AppColors.chocolateMuted),
+          ),
+        ),
       const SizedBox(height: 12),
       GridView.builder(
         shrinkWrap: true,

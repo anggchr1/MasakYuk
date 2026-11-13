@@ -40,6 +40,9 @@ class RecipeRepository extends ChangeNotifier {
   List<Recipe> get customs => List.unmodifiable(_custom);
   bool isFavorite(String docId) => _favorites.contains(docId);
 
+  /// True kalau konten Wikipedia sudah termuat (dari API atau cache).
+  bool get ensiklopediaDaring => _ensiklopediaServer.isNotEmpty;
+
   /// Ensiklopedia tampil: kurasi lokal + impor Wikipedia (nama ganda dibuang).
   List<IngredientInfo> get ensiklopedia {
     final lokal = {for (final e in encyclopedia) e.nama.toLowerCase()};
@@ -132,7 +135,7 @@ class RecipeRepository extends ChangeNotifier {
     ]);
     loaded = true;
     notifyListeners();
-    _segarkanEnsiklopedia(); // jaringan; gagal = pakai cache/assets
+    muatEnsiklopedia(); // jaringan; gagal = pakai cache/assets
   }
 
   /// Baca snapshot ensiklopedia terakhir dari perangkat (mode offline).
@@ -149,7 +152,8 @@ class RecipeRepository extends ChangeNotifier {
   }
 
   /// Segarkan dari server, lalu simpan supaya bisa dibuka tanpa internet.
-  Future<void> _segarkanEnsiklopedia() async {
+  /// Dipanggil saat app mulai dan setiap kali layar Ensiklopedia dibuka.
+  Future<void> muatEnsiklopedia() async {
     try {
       final res = await api.get('/api/v1/ensiklopedia');
       final data = ((res['data'] as List?) ?? (res as List?) ?? const [])
