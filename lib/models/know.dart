@@ -118,6 +118,11 @@ class PlaceInfo {
   final String desc;
   final bool contoh; // true = seed contoh, ganti data live belakangan
   final String jam;
+  final String telepon;
+  final String situs;
+  /// Foto asli dari OSM (jarang); kosong = pakai ilustrasi kategori.
+  final String foto;
+  final List<String> fasilitas;
   final List<PlaceProduct> unggulan;
   const PlaceInfo({
     required this.id,
@@ -133,6 +138,10 @@ class PlaceInfo {
     required this.desc,
     required this.contoh,
     this.jam = '',
+    this.telepon = '',
+    this.situs = '',
+    this.foto = '',
+    this.fasilitas = const [],
     this.unggulan = const [],
   });
   factory PlaceInfo.fromJson(Map<String, dynamic> j) => PlaceInfo(
@@ -149,6 +158,12 @@ class PlaceInfo {
         desc: j['desc'] as String? ?? '',
         contoh: j['contoh'] as bool? ?? false,
         jam: j['jam'] as String? ?? '',
+        telepon: j['telepon'] as String? ?? '',
+        situs: j['situs'] as String? ?? '',
+        foto: j['foto'] as String? ?? '',
+        fasilitas: ((j['fasilitas'] as List?) ?? [])
+            .map((e) => '$e')
+            .toList(),
         unggulan: ((j['unggulan'] as List?) ?? [])
             .map((e) => PlaceProduct.fromJson(
                 (e as Map).cast<String, dynamic>()))

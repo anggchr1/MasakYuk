@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/app_image.dart';
+import '../../data/place_photo.dart';
 import '../../models/know.dart';
 
 /// Detail tempat v2 — ikut Figma "15. Detail Tempat" (62:2889):
@@ -52,16 +54,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen>
                 height: 320,
                 width: double.infinity,
                 color: AppColors.sand,
-                child: Center(
-                  child: Text(
-                    widget.place.nama.isEmpty
-                        ? '?'
-                        : widget.place.nama[0],
-                    style: const TextStyle(
-                        fontSize: 120,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFFDEC0B7)),
-                  ),
+                child: AppImage(
+                  url: placePhoto(widget.place),
+                  fallbackLetter: widget.place.nama,
                 ),
               ),
               Positioned.fill(
@@ -148,7 +143,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen>
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
-                              '${widget.place.jenis} • ${widget.place.jam.isEmpty ? 'Buka setiap hari' : widget.place.jam.split(',').first}',
+                              widget.place.jam.isEmpty
+                                  ? widget.place.jenis
+                                  : '${widget.place.jenis} • ${widget.place.jam.split(',').first}',
                               maxLines: 1,
                               overflow:
                                   TextOverflow.ellipsis,
@@ -164,6 +161,24 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen>
                   ),
                 ),
               ),
+              if (placePhotoIlustrasi(widget.place))
+                Positioned(
+                  right: 20,
+                  bottom: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(9999),
+                    ),
+                    child: const Text('Ilustrasi',
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.chocolate)),
+                  ),
+                ),
             ],
           ),
           Padding(
@@ -195,26 +210,73 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen>
                   ],
                 ),
                 const SizedBox(height: 12),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    Expanded(
-                      child: _statPill(
-                          Icons.near_me_outlined,
-                          'JARAK TEMPUH',
-                          'Aktifkan lokasi',
-                          'untuk jarak akurat'),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _statPill(
-                          Icons.star_outline,
-                          'REKAN MASAK',
-                          '★ ${widget.place.rating}',
-                          '(${widget.place.ulasan} ulasan)'),
-                    ),
+                    _infoPill(Icons.storefront_outlined, widget.place.jenis),
+                    if (widget.place.jam.isNotEmpty)
+                      _infoPill(
+                          Icons.schedule_outlined, widget.place.jam),
+                    if (widget.place.telepon.isNotEmpty)
+                      GestureDetector(
+                        onTap: () => launchUrl(
+                            Uri.parse('tel:${widget.place.telepon}')),
+                        child: _infoPill(Icons.call_outlined,
+                            widget.place.telepon),
+                      ),
+                    if (widget.place.situs.isNotEmpty)
+                      GestureDetector(
+                        onTap: () => launchUrl(
+                            Uri.parse(_url(widget.place.situs)),
+                            mode: LaunchMode.externalApplication),
+                        child: _infoPill(Icons.language,
+                            _ringkas(widget.place.situs)),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.star,
+                        size: 18, color: AppColors.amber),
+                    const SizedBox(width: 6),
+                    Text(
+                      widget.place.rating > 0
+                          ? '${widget.place.rating} (${widget.place.ulasan} ulasan)'
+                          : 'Belum ada rating',
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.chocolate),
+                    ),
+                    if (widget.place.rating <= 0) ...[
+                      const SizedBox(width: 6),
+                      const Expanded(
+                        child: Text(
+                          'OpenStreetMap belum menyediakan rating tempat.',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.chocolateMuted),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                if (widget.place.fasilitas.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final f in widget.place.fasilitas)
+                        _infoPill(
+                            Icons.check_circle_outline, f),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 12),
+                if (widget.place.harga.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -364,252 +426,69 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen>
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.verified,
+                            Icon(Icons.map_outlined,
                                 size: 14,
                                 color:
                                     AppColors.primary),
                             SizedBox(width: 6),
-                            Text(
-                                'Diverifikasi Komunitas MasakYuk',
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight:
-                                        FontWeight.w600,
-                                    color: AppColors
-                                        .chocolateMuted)),
-                            Spacer(),
-                            Text('Tradisional',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight:
-                                        FontWeight.w700,
-                                    letterSpacing: 0.5,
-                                    color: AppColors
-                                        .chocolate)),
+                            Expanded(
+                              child: Text(
+                                  'Sumber data: OpenStreetMap',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight:
+                                          FontWeight.w600,
+                                      color: AppColors
+                                          .chocolateMuted)),
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    const Icon(
-                        Icons.shopping_basket_outlined,
-                        size: 16,
-                        color: AppColors.chocolate),
-                    const SizedBox(width: 8),
-                    const Text('Bahan & Menu Andalan',
-                        style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.chocolate)),
-                    const Spacer(),
-                    Text(
-                        '${widget.place.unggulan.length} Bahan Utama',
-                        style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                            color: AppColors
-                                .chocolateMuted)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ...widget.place.unggulan.map((u) => Container(
-                      margin:
-                          const EdgeInsets.only(
-                              bottom: 10),
-                      padding:
-                          const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.sand,
-                        borderRadius:
-                            BorderRadius.circular(24),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration:
-                                const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                                Icons.shopping_basket,
-                                size: 18,
-                                color:
-                                    AppColors.primary),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment
-                                      .start,
-                              children: [
-                                Text(u.nama,
-                                    style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight:
-                                            FontWeight
-                                                .w700,
-                                        color: AppColors
-                                            .chocolate)),
-                                Text(u.desc,
-                                    maxLines: 2,
-                                    overflow: TextOverflow
-                                        .ellipsis,
-                                    style:
-                                        const TextStyle(
-                                            fontSize: 12,
-                                            color: AppColors
-                                                .chocolateMuted)),
-                              ],
-                            ),
-                          ),
-                          Text(u.harga,
-                              style: const TextStyle(
-                                  fontWeight:
-                                      FontWeight.w700,
-                                  fontSize: 14,
-                                  color: AppColors
-                                      .chocolate)),
-                        ],
-                      ),
-                    )),
-                const SizedBox(height: 24),
-                const Row(
-                  children: [
-                    Icon(Icons.schedule_outlined,
-                        size: 16,
-                        color: AppColors.chocolate),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                          'Jadwal & Waktu Terbaik Belanja',
+                if (widget.place.jam.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  const Row(
+                    children: [
+                      Icon(Icons.schedule_outlined,
+                          size: 16,
+                          color: AppColors.chocolate),
+                      SizedBox(width: 8),
+                      Text('Jam Operasional',
                           style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
-                              color:
-                                  AppColors.chocolate)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.sand,
-                    borderRadius:
-                        BorderRadius.circular(24),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding:
-                            const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius:
-                              BorderRadius.circular(24),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                                Icons.access_time,
-                                size: 18,
-                                color:
-                                    AppColors.primary),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment
-                                        .start,
-                                children: [
-                                  Text(
-                                      widget.place.jam.isEmpty
-                                          ? 'Jam operasional: setiap hari'
-                                          : 'Jam operasional: ${widget.place.jam}',
-                                      style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight:
-                                              FontWeight
-                                                  .w700)),
-                                  const Text(
-                                      'Buka setiap hari (Senin s/d Minggu)',
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          color: AppColors
-                                              .chocolateMuted)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding:
-                            const EdgeInsets.all(13),
-                        decoration: BoxDecoration(
-                          color:
-                              const Color(0xFFFFE2D5)
-                                  .withValues(
-                                      alpha: 0.6),
-                          borderRadius:
-                              BorderRadius.circular(24),
-                          border: Border.all(
-                              color: const Color(
-                                      0xFFFF9F59)
-                                  .withValues(
-                                      alpha: 0.3)),
-                        ),
-                        child: const Row(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                                Icons
-                                    .tips_and_updates_outlined,
-                                size: 16,
-                                color:
-                                    AppColors.chocolate),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment
-                                        .start,
-                                children: [
-                                  Text(
-                                      'Rekomendasi Waktu Belanja:',
-                                      style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight:
-                                              FontWeight
-                                                  .w700)),
-                                  Text(
-                                      'Datang pagi untuk pilihan tersegar dan harga terbaik.',
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          height:
-                                              19.5 / 12,
-                                          color: AppColors
-                                              .chocolate)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                              color: AppColors.chocolate)),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.sand,
+                      borderRadius:
+                          BorderRadius.circular(24),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.access_time,
+                            size: 18,
+                            color: AppColors.primary),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(widget.place.jam,
+                              style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight:
+                                      FontWeight.w600,
+                                  color: AppColors
+                                      .chocolate)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -635,58 +514,41 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen>
     );
   }
 
-  Widget _statPill(IconData icon, String label, String big,
-      String small) {
+  Widget _infoPill(IconData icon, String teks) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(
+          horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.sand,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(9999),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon,
-                size: 16, color: AppColors.primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.55,
-                        color: AppColors
-                            .chocolateMuted)),
-                Text(big,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.chocolate)),
-                Text(small,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors
-                            .chocolateMuted)),
-              ],
-            ),
+          Icon(icon, size: 14, color: AppColors.primary),
+          const SizedBox(width: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 220),
+            child: Text(teks,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.chocolate)),
           ),
         ],
       ),
     );
+  }
+
+  static String _url(String s) =>
+      s.startsWith('http') ? s : 'https://$s';
+
+  static String _ringkas(String s) {
+    final u = s
+        .replaceFirst(RegExp(r'^https?://'), '')
+        .replaceFirst(RegExp(r'/$'), '');
+    return u.length > 32 ? '${u.substring(0, 32)}…' : u;
   }
 }

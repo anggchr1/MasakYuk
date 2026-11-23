@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/sapaan.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_feedback.dart';
 import '../../core/widgets/app_image.dart';
@@ -23,7 +24,7 @@ class ResultsScreen extends StatefulWidget {
     super.key,
     required this.repo,
     this.title = 'Pencarian Bahan',
-    this.subtitle = 'Good Morning, Chef!',
+    this.subtitle = '',
     Set<String>? inputs,
     this.chip,
     this.showAll = false,
@@ -43,6 +44,18 @@ class _ResultsScreenState extends State<ResultsScreen>
   String _sort = 'Kecocokan';
   static const _sorts = ['Kecocokan', 'Paling Cepat', 'Nama A-Z'];
   final _searchCtrl = TextEditingController();
+  final _scroll = ScrollController();
+
+  bool get _kategoriMode =>
+      widget.chip != null && widget.chip != 'Semua';
+
+  bool get _semuaMode =>
+      widget.showAll &&
+      widget.chip == null &&
+      widget.initial == null &&
+      _inputs.isEmpty;
+
+  String _salam() => sapaanJam(DateTime.now());
 
   @override
   void initState() {
@@ -54,6 +67,24 @@ class _ResultsScreenState extends State<ResultsScreen>
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
     _inputs = Set.of(widget.inputs);
+    _scroll.addListener(_onScroll);
+    if (_kategoriMode) {
+      // Halaman 1 + ±100 resep kategori langsung dimuat.
+      widget.repo.muatKategoriLagi(widget.chip!);
+    }
+  }
+
+  /// Muat berikutnya saat daftar hampir habis (mirip halaman web).
+  void _onScroll() {
+    if (_scroll.position.extentAfter < 500) _muatLagi();
+  }
+
+  void _muatLagi() {
+    if (_kategoriMode) {
+      widget.repo.muatKategoriLagi(widget.chip!);
+    } else if (_semuaMode) {
+      widget.repo.muatLagi();
+    }
   }
 
   @override
@@ -66,6 +97,7 @@ class _ResultsScreenState extends State<ResultsScreen>
   void dispose() {
     _controller.dispose();
     _searchCtrl.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -76,6 +108,8 @@ class _ResultsScreenState extends State<ResultsScreen>
     if (widget.chip != null && widget.chip != 'Semua') {
       return widget.repo.byDisplayCategory(widget.chip!);
     }
+    // Daftar "Semua Resep" (tanpa bahan): tampilkan semua yang sudah dimuat.
+    if (_inputs.isEmpty) return widget.repo.semua;
     final res = widget.repo.search(_inputs);
     return [...res.top3, ...res.rest];
   }
@@ -101,10 +135,21 @@ class _ResultsScreenState extends State<ResultsScreen>
         final shown =
             _showAll ? items : items.take(3).toList();
         final rest = items.length - shown.length;
+        final kategori = widget.chip;
+        final totalResep = kategori == null
+            ? widget.repo.total
+            : widget.repo.totalKategori(kategori);
+        final memuatResep = kategori == null
+            ? widget.repo.memuatLagi
+            : widget.repo.memuatKategori(kategori);
+        final habisResep = kategori == null
+            ? widget.repo.habis
+            : widget.repo.kategoriHabis(kategori);
         return FadeTransition(
           opacity: _fade,
           child: Scaffold(
             body: ListView(
+              controller: _scroll,
               padding: EdgeInsets.zero,
               children: [
                 _header(),
@@ -304,12 +349,21 @@ class _ResultsScreenState extends State<ResultsScreen>
                       ),
                     const SizedBox(height: 12),
                     if (items.isEmpty)
-                      const EmptyState(
-                        icon: Icons.search_off,
-                        title: 'Tidak Ditemukan',
-                        desc:
-                            'Coba kata lain, kurangi bahan, atau tambah resep sendiri.',
-                      )
+                      _kategoriMode && memuatResep
+                          ? const Padding(
+                              padding:
+                                  EdgeInsets.symmetric(
+                                      vertical: 32),
+                              child: Center(
+                                  child:
+                                      CircularProgressIndicator()),
+                            )
+                          : const EmptyState(
+                              icon: Icons.search_off,
+                              title: 'Tidak Ditemukan',
+                              desc:
+                                  'Coba kata lain, kurangi bahan, atau tambah resep sendiri.',
+                            )
                     else
                       ...shown.map((r) =>
                           _matchCard(r)),
@@ -340,6 +394,34 @@ class _ResultsScreenState extends State<ResultsScreen>
                                 color: AppColors
                                     .chocolateMuted),
                           ),
+                        ),
+                      ),
+                    ],
+                    if ((_semuaMode || _kategoriMode) &&
+                        items.isNotEmpty &&
+                        totalResep > 0) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '1–${items.length} dari $totalResep resep',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.chocolateMuted),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed:
+                              habisResep || memuatResep
+                                  ? null
+                                  : _muatLagi,
+                          child: Text(memuatResep
+                              ? 'Memuat 100 resep…'
+                              : habisResep
+                                  ? 'Semua resep sudah tampil'
+                                  : 'Lihat 100 resep lagi'),
                         ),
                       ),
                     ],
@@ -392,7 +474,10 @@ class _ResultsScreenState extends State<ResultsScreen>
                               color: Color(0xFFFFB59C),
                               fontSize: 11,
                               letterSpacing: 0.55)),
-                      Text(widget.subtitle,
+                      Text(
+                          widget.subtitle.isEmpty
+                              ? _salam()
+                              : widget.subtitle,
                           style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,

@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/api/api_client.dart';
+import '../core/services/location_service.dart';
+import '../core/services/places_service.dart';
 import '../models/know.dart';
 import '../models/recipe.dart';
 import '../models/social.dart';
@@ -19,6 +22,20 @@ class RecipeRepository extends ChangeNotifier {
 
   final List<Recipe> _system = [];
   final List<Recipe> _custom = [];
+  /// Nama kategori -> slug API (urut dari server).
+  final Map<String, String> kategori = {};
+  int _halaman = 1;
+  int _totalHalaman = 1;
+  /// Total resep terbit di server (untuk teks "x dari y").
+  int total = 0;
+  bool habis = false;
+  bool _memuatLagi = false;
+  bool get memuatLagi => _memuatLagi;
+  /// Halaman & total per kategori (pagination chip kategori).
+  final Map<String, int> _halKat = {};
+  final Map<String, int> _totalHalKat = {};
+  final Map<String, int> _totalKat = {};
+  final Set<String> _memuatKat = {};
   final Set<String> _favorites = {};
   final List<Map<String, dynamic>> _prices = [];
   final List<IngredientInfo> encyclopedia = [];
@@ -89,11 +106,123 @@ class RecipeRepository extends ChangeNotifier {
       final hasil = await _apiResep.fetchAll();
       _system
         ..clear()
-        ..addAll(hasil);
+        ..addAll(hasil.resep);
+      total = hasil.total;
+      _totalHalaman = hasil.halamanTerakhir;
+      _halaman = 1;
+      habis = false;
+      _halKat.clear();
+      _totalHalKat.clear();
+      _totalKat.clear();
+      _memuatKat.clear();
+      unawaited(muatLagi()); // isi ulang sampai ±100 untuk tamu
     } catch (e) {
       debugPrint('Gagal memuat resep publik: $e');
     }
     notifyListeners();
+  }
+
+  /// Chip kategori: "Semua" + nama dari server.
+  List<String> get chips => ['Semua', ...kategori.keys];
+
+  /// Daftar kategori (untuk chip). Resepnya dimuat saat chip dibuka.
+  Future<void> muatKategoriResep() async {
+    try {
+      final daftar = await _apiResep.fetchKategori();
+      kategori
+        ..clear()
+        ..addEntries(daftar.map((k) =>
+            MapEntry('${k['nama']}', '${k['slug']}')));
+    } catch (e) {
+      debugPrint('Gagal memuat kategori resep: $e');
+    }
+    notifyListeners();
+  }
+
+  /// Jumlah resep satu kategori di server (0 = belum dimuat).
+  int totalKategori(String nama) => _totalKat[nama] ?? 0;
+
+  bool memuatKategori(String nama) => _memuatKat.contains(nama);
+
+  bool kategoriHabis(String nama) {
+    final hal = _halKat[nama] ?? 0;
+    return hal > 0 && hal >= (_totalHalKat[nama] ?? 1);
+  }
+
+  /// 15 resep terbaru satu kategori (halaman 1).
+  Future<void> _muatKategori(String nama) async {
+    final slug = kategori[nama];
+    if (slug == null || (_halKat[nama] ?? 0) > 0) return;
+    _memuatKat.add(nama);
+    notifyListeners();
+    try {
+      final hasil = await _apiResep.fetchAll(kategori: slug);
+      _halKat[nama] = 1;
+      _totalHalKat[nama] = hasil.halamanTerakhir;
+      _totalKat[nama] = hasil.total;
+      _gabung(hasil.resep);
+    } catch (e) {
+      debugPrint('Gagal memuat kategori $nama: $e');
+    }
+    _memuatKat.remove(nama);
+    notifyListeners();
+  }
+
+  /// Tambah ±100 resep pada satu kategori (7 halaman API sekaligus).
+  Future<void> muatKategoriLagi(String nama) async {
+    final slug = kategori[nama];
+    if (slug == null || _memuatKat.contains(nama)) return;
+    if ((_halKat[nama] ?? 0) == 0) await _muatKategori(nama);
+    var hal = _halKat[nama] ?? 0;
+    final totalHal = _totalHalKat[nama] ?? 1;
+    if (hal == 0 || hal >= totalHal) return;
+    _memuatKat.add(nama);
+    notifyListeners();
+    try {
+      var ditambah = 0;
+      while (ditambah < 100 && hal < totalHal) {
+        final hasil =
+            await _apiResep.fetchAll(kategori: slug, page: hal + 1);
+        hal++;
+        if (hasil.resep.isEmpty) break;
+        final sebelum = _system.length;
+        _gabung(hasil.resep);
+        ditambah += _system.length - sebelum;
+      }
+      _halKat[nama] = hal;
+    } catch (e) {
+      debugPrint('Gagal memuat kategori $nama: $e');
+    }
+    _memuatKat.remove(nama);
+    notifyListeners();
+  }
+
+  /// Muat 100 resep berikutnya (API 15 per halaman) saat tombol ditekan.
+  Future<void> muatLagi() async {
+    if (habis || _memuatLagi || _halaman >= _totalHalaman) return;
+    _memuatLagi = true;
+    notifyListeners();
+    try {
+      var ditambah = 0;
+      while (ditambah < 100 && _halaman < _totalHalaman) {
+        final hasil = await _apiResep.fetchAll(page: _halaman + 1);
+        _halaman++;
+        if (hasil.resep.isEmpty) break;
+        final sebelum = _system.length;
+        _gabung(hasil.resep);
+        ditambah += _system.length - sebelum;
+      }
+      if (_halaman >= _totalHalaman) habis = true;
+    } catch (e) {
+      debugPrint('Gagal memuat resep berikutnya: $e');
+    }
+    _memuatLagi = false;
+    notifyListeners();
+  }
+
+  void _gabung(List<Recipe> baru) {
+    final ada = {for (final r in _system) r.docId};
+    _system.addAll(baru.where((r) => ada.add(r.docId)));
   }
 
   Future<void> load() async {
@@ -102,23 +231,100 @@ class RecipeRepository extends ChangeNotifier {
         (json.decode(await rootBundle.loadString(p)) as List);
     // Resep: dari backend (API sumber utama). Tanpa fallback lokal.
     try {
-      _system.addAll(await _apiResep.fetchAll());
+      final hasil = await _apiResep.fetchAll();
+      _system.addAll(hasil.resep);
+      total = hasil.total;
+      _totalHalaman = hasil.halamanTerakhir;
     } catch (e) {
       debugPrint('Gagal memuat resep dari API: $e');
     }
+    await muatKategoriResep();
     final pr =
         (await loadJson('assets/prices.json')).cast<Map<String, dynamic>>();
     _prices.addAll(pr);
     final en = (await loadJson('assets/encyclopedia.json'))
         .cast<Map<String, dynamic>>();
     encyclopedia.addAll(en.map(IngredientInfo.fromJson));
-    final pl =
-        (await loadJson('assets/places.json')).cast<Map<String, dynamic>>();
-    places.addAll(pl.map(PlaceInfo.fromJson));
     await _muatCacheEnsiklopedia();
     loaded = true;
     notifyListeners();
+    // Isi daftar sampai ±100 resep di latar agar tidak cuma 15.
+    unawaited(muatLagi());
     muatEnsiklopedia(); // jaringan; gagal = pakai cache/assets
+  }
+
+  DateTime? _tempatWaktu;
+  double? _tempatLat;
+  double? _tempatLng;
+
+  /// Isi `places` dengan tempat makan/pasar terdekat (OpenStreetMap).
+  /// Nominatim dulu (cepat), toko dari Overpass menyusul di latar.
+  Future<void> muatTempatSekitar(double lat, double lng,
+      {bool paksa = false}) async {
+    final w = _tempatWaktu;
+    // Cache hanya berlaku untuk titik yang sama (±100 m); kalau user pindah,
+    // tempat lama tidak boleh dipertahankan.
+    final samaTitik = _tempatLat != null &&
+        _tempatLng != null &&
+        (lat - _tempatLat!).abs() < 0.001 &&
+        (lng - _tempatLng!).abs() < 0.001;
+    if (!paksa &&
+        w != null &&
+        samaTitik &&
+        places.isNotEmpty &&
+        DateTime.now().difference(w) < const Duration(minutes: 10)) {
+      return; // hindari 429 saat layar dibuka-tutup berulang
+    }
+    List<PlaceInfo> dekat;
+    try {
+      dekat = await PlacesService.sekitar(lat, lng);
+    } catch (_) {
+      dekat = await PlacesService.toko(lat, lng);
+    }
+    places
+      ..clear()
+      ..addAll(dekat);
+    _tempatWaktu = DateTime.now();
+    _tempatLat = lat;
+    _tempatLng = lng;
+    notifyListeners();
+    if (dekat.isNotEmpty) unawaited(_lengkapiTempat(lat, lng));
+  }
+
+  /// Ambil lokasi awal + tempat sekitar agar Home & peta langsung terisi.
+  Future<void> siapkanTempatAwal() async {
+    try {
+      final r = await LocationService.current();
+      await muatTempatSekitar(r.pos.latitude, r.pos.longitude);
+    } catch (e) {
+      debugPrint('Lokasi awal belum tersedia: $e');
+    }
+  }
+
+  /// Tambahkan pasar/toko dari Overpass tanpa mengganggu daftar yang tampil.
+  Future<void> _lengkapiTempat(double lat, double lng) async {
+    try {
+      final toko = await PlacesService.toko(lat, lng);
+      final ada = {for (final p in places) _kunciTempat(p)};
+      final baru = toko.where((p) => ada.add(_kunciTempat(p))).toList();
+      if (baru.isEmpty) return;
+      places
+        ..addAll(baru)
+        ..sort((a, b) =>
+            _jarak2(a, lat, lng).compareTo(_jarak2(b, lat, lng)));
+      if (places.length > 80) places.removeRange(80, places.length);
+      notifyListeners();
+    } catch (_) {
+      // Overpass sibuk: daftar dari Nominatim tetap dipakai.
+    }
+  }
+
+  static String _kunciTempat(PlaceInfo p) => '${p.nama.toLowerCase()}|'
+      '${p.lat.toStringAsFixed(4)}|${p.lng.toStringAsFixed(4)}';
+
+  static double _jarak2(PlaceInfo p, double lat, double lng) {
+    final dy = p.lat - lat, dx = p.lng - lng;
+    return dx * dx + dy * dy;
   }
 
   /// Baca snapshot ensiklopedia terakhir dari perangkat (mode offline).
@@ -327,8 +533,18 @@ class RecipeRepository extends ChangeNotifier {
   List<Recipe> byTag(String tag) =>
       _pool.where((r) => r.tags.contains(tag)).toList();
 
-  /// Filter chip kategori ala desain v2 (nama tampilan → data).
+  /// Semua resep yang termuat (publik + milik sendiri yang terbit).
+  List<Recipe> get semua => List.unmodifiable(_pool);
+
+  /// Filter chip kategori: cocokkan slug API (`tags`) atau nama kategori.
   List<Recipe> byDisplayCategory(String c) {
+    final slug = kategori[c];
+    if (slug != null) {
+      return _pool
+          .where((r) => r.tags.contains(slug) || r.category == c)
+          .toList();
+    }
+    // Fallback bila daftar kategori server belum termuat.
     switch (c) {
       case 'Sarapan':
         return byTag('sarapan');

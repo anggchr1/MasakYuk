@@ -188,81 +188,92 @@ class _NotificationsScreenState
     );
   }
 
-  /// Header krem ala Figma: kembali + judul + tandai dibaca.
+  /// Header coklat melengkung: kembali + judul + tandai semua dibaca.
   Widget _header() {
-    return SafeArea(
-      bottom: false,
-      child: Container(
-        padding:
-            const EdgeInsets.fromLTRB(20, 12, 20, 12),
-      decoration: BoxDecoration(
-        color: AppColors.cream.withValues(alpha: 0.95),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x0D3D2314),
-              blurRadius: 4,
-              offset: Offset(0, 1)),
-        ],
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      decoration: const BoxDecoration(
+        color: Color(0xFF7F2500),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.sand,
-                borderRadius:
-                    BorderRadius.circular(9999),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(9999),
+                  ),
+                  child: const Icon(Icons.arrow_back,
+                      size: 18, color: Colors.white),
+                ),
               ),
-              child: const Icon(Icons.arrow_back,
-                  size: 18,
-                  color: AppColors.chocolate),
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              children: [
-                Text('Notifikasi',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.4,
-                        color: AppColors.chocolate)),
-                Text('Pesan aktivitas resep & dapur',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors
-                            .chocolateMuted)),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: widget.repo.markAllRead,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFE2D5)
-                    .withValues(alpha: 0.6),
-                borderRadius:
-                    BorderRadius.circular(9999),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Notifikasi',
+                        style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.55,
+                            color: Colors.white)),
+                    Text('Pesan aktivitas resep & dapur',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFFFB59C))),
+                  ],
+                ),
               ),
-              child: const Text('Tandai Semua\nDibaca',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF7F2500))),
-            ),
+              GestureDetector(
+                onTap: widget.repo.markAllRead,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(9999),
+                  ),
+                  child: const Text('Tandai dibaca',
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              const Icon(Icons.inbox_outlined,
+                  size: 14, color: Color(0xFFFFB59C)),
+              const SizedBox(width: 6),
+              Text(
+                widget.repo.unreadCount > 0
+                    ? '${widget.repo.unreadCount} notifikasi belum dibaca'
+                    : 'Semua notifikasi sudah dibaca',
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFFFB59C)),
+              ),
+            ],
           ),
         ],
-      ),
       ),
     );
   }
@@ -301,18 +312,12 @@ class _NotificationsScreenState
     final accent = _kindColor(n.kind);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: n.read
             ? AppColors.sand.withValues(alpha: 0.7)
             : AppColors.sand,
-        borderRadius: BorderRadius.circular(32),
-        border: n.read
-            ? null
-            : Border(
-                left: BorderSide(
-                    color: accent, width: 4),
-              ),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,9 +347,11 @@ class _NotificationsScreenState
                   children: [
                     Expanded(
                       child: Text(n.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                               fontWeight: FontWeight.w700,
-                              fontSize: 18,
+                              fontSize: 15,
                               color: AppColors.chocolate)),
                     ),
                     if (!n.read)

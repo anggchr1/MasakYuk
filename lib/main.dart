@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import 'core/services/location_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/push/push_service.dart';
 import 'core/widgets/bottom_nav.dart';
@@ -58,6 +61,10 @@ class _MasakYukAppState extends State<MasakYukApp> {
     _repo.onNeedLogin = _masukDariProfil;
     _auth = AuthProvider(_repo);
     _repo.load(); // NANTI M2: + Firebase.initializeApp + Auth gate
+    // Izin lokasi diminta di awal, lalu tempat sekitar disiapkan agar Home
+    // dan peta tidak menampilkan lokasi lama/tempat kosong.
+    unawaited(LocationService.mintaIzin()
+        .then((_) => _repo.siapkanTempatAwal()));
     _auth.muatSesi().then((_) {
       if (_auth.loggedIn) {
         _repo.muatResepMilikku();
@@ -168,6 +175,7 @@ class _HomeShellState extends State<HomeShell> {
         return HomeScreen(
           repo: widget.repo,
           onNeedLogin: widget.onLogout,
+          onProfile: () => _pindah(3),
         );
       case 1:
         return CookScreen(repo: widget.repo);

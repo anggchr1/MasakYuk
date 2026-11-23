@@ -510,6 +510,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                                                     FontWeight
                                                         .w600)),
                                   ),
+                                  if (p.rating > 0)
                                   Container(
                                     padding:
                                         const EdgeInsets

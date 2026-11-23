@@ -13,16 +13,8 @@ class HomeProvider extends ChangeNotifier {
   final Set<String> picked = {};
   bool applied = false;
 
-  static const chips = [
-    'Semua',
-    'Sarapan',
-    'Cepat & Mudah',
-    'Pedas',
-    'Nusantara',
-    'Ayam & Daging',
-    'Seafood',
-    'Sayuran',
-  ];
+  /// Chip kategori dari server (fallback: hanya "Semua" bila gagal).
+  List<String> get chips => repo.chips;
 
   void setChip(String c) {
     chip = c;

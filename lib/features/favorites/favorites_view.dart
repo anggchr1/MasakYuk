@@ -175,6 +175,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             ],
           ),
           floatingActionButton: FloatingActionButton.extended(
+            // Unik: Home & Favorit hidup bersamaan di IndexedStack.
+            heroTag: 'fab-favorit',
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -10,7 +12,33 @@ class LocResult {
 }
 
 class LocationService {
-  static Future<LocResult> current() async {
+  static LocResult? _cache;
+  static DateTime? _cacheAt;
+
+  /// Minta izin lebih awal (mis. saat app dibuka) tanpa menunggu GPS fix.
+  /// Tidak melempar error: hasil izin tetap ditangani saat lokasi dipakai.
+  static Future<void> mintaIzin() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) return;
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        await Geolocator.requestPermission();
+      }
+    } catch (_) {
+      // izin ditolak / layanan tak tersedia → ditangani di current()
+    }
+  }
+
+  /// [segar] = abaikan cache 60 detik (dipakai tombol muat ulang).
+  static Future<LocResult> current({bool segar = false}) async {
+    final c = _cache;
+    if (!segar &&
+        c != null &&
+        _cacheAt != null &&
+        DateTime.now().difference(_cacheAt!) <
+            const Duration(seconds: 60)) {
+      return c;
+    }
     final enabled =
         await Geolocator.isLocationServiceEnabled();
     if (!enabled) {
@@ -26,12 +54,28 @@ class LocationService {
     if (perm == LocationPermission.deniedForever) {
       throw 'Izin lokasi ditolak permanen — buka Pengaturan.';
     }
-    final pos = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.medium,
-        timeLimit: Duration(seconds: 15),
-      ),
-    );
+    Position pos;
+    try {
+      pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 25),
+        ),
+      );
+    } on TimeoutException {
+      // Hanya pakai posisi terakhir kalau masih baru; posisi lama membuat
+      // peta menampilkan lokasi yang jauh dari tempat user sebenarnya.
+      final last = await Geolocator.getLastKnownPosition();
+      final umur = last == null
+          ? null
+          : DateTime.now().difference(last.timestamp);
+      if (last == null ||
+          umur == null ||
+          umur > const Duration(minutes: 2)) {
+        throw 'GPS belum dapat sinyal. Coba di area terbuka.';
+      }
+      pos = last;
+    }
     var locality =
         '${pos.latitude.toStringAsFixed(3)}, ${pos.longitude.toStringAsFixed(3)}';
     try {
@@ -52,7 +96,9 @@ class LocationService {
     } catch (_) {
       // nama daerah opsional — koordinat tetap dipakai
     }
-    return LocResult(pos, locality);
+    _cache = LocResult(pos, locality);
+    _cacheAt = DateTime.now();
+    return _cache!;
   }
 
   static double meters(

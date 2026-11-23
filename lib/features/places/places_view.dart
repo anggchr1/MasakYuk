@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../core/services/location_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/app_image.dart';
+import '../../data/place_photo.dart';
 import '../../data/recipe_repository.dart';
 import '../../models/know.dart';
 import 'place_detail_view.dart';
 
 /// Makan di Sekitar: search + kategori + sortir + list + daftar warung.
-/// Jarak & GPS = teknis belakangan: radius/sortir jarakКонечно toast jujur.
-/// Data: assets/places.json (seed contoh, ganti Overpass live belakangan).
+/// Data: pasar & toko OpenStreetMap di sekitar GPS (tanpa seed contoh).
 class PlacesScreen extends StatefulWidget {
   final RecipeRepository repo;
   const PlacesScreen({super.key, required this.repo});
@@ -23,12 +24,13 @@ class _PlacesScreenState extends State<PlacesScreen>
   late final Animation<double> _fade;
   String _q = '';
   String _kat = 'Semua';
-  String _sort = 'Rating Tertinggi';
   final _ctrl = TextEditingController();
   Position? _pos;
   String _locLabel = 'Mencari lokasimu...';
   bool _locLoading = true;
   double _maxKm = 10;
+  String? _placeErr;
+  bool _fetching = false;
 
   @override
   void initState() {
@@ -39,36 +41,54 @@ class _PlacesScreenState extends State<PlacesScreen>
     );
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
+    widget.repo.addListener(_onRepo);
     _fetchLoc();
+  }
+
+  /// Toko dari Overpass bisa datang menyusul; gambar ulang daftar.
+  void _onRepo() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    widget.repo.removeListener(_onRepo);
     _controller.dispose();
     _ctrl.dispose();
     super.dispose();
   }
 
-  /// GPS nyala saat buka section (sesuai Figma: lokasi saat ini).
-  Future<void> _fetchLoc() async {
+  /// GPS nyala saat buka section, lalu tarik tempat di sekitarnya.
+  Future<void> _fetchLoc({bool paksa = false}) async {
+    if (_fetching) return;
+    _fetching = true;
     setState(() {
       _locLoading = true;
     });
     try {
-      final r = await LocationService.current();
+      final r = await LocationService.current(segar: paksa);
       if (!mounted) return;
       setState(() {
         _pos = r.pos;
         _locLabel = r.locality;
+      });
+      await widget.repo.muatTempatSekitar(
+          r.pos.latitude, r.pos.longitude,
+          paksa: paksa);
+      if (!mounted) return;
+      setState(() {
         _locLoading = false;
+        _placeErr = null;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _pos = null;
-        _locLabel = '$e';
+        if (_pos == null) _locLabel = '$e';
         _locLoading = false;
+        _placeErr = '$e';
       });
+    } finally {
+      _fetching = false;
     }
   }
 
@@ -76,19 +96,13 @@ class _PlacesScreenState extends State<PlacesScreen>
       ? null
       : LocationService.meters(_pos!, p.lat, p.lng);
 
-  int _lowPrice(PlaceInfo p) {
-    final m =
-        RegExp(r'Rp([\d.]+)').firstMatch(p.harga.replaceAll(' ', ''));
-    if (m == null) return 999999999;
-    return int.tryParse(m.group(1)!.replaceAll('.', '')) ??
-        999999999;
-  }
-
   @override
   Widget build(BuildContext context) {
+    final ada = {for (final p in widget.repo.places) p.jenis};
     final kats = [
       'Semua',
-      ...{for (final p in widget.repo.places) p.jenis}
+      for (final k in ['Tempat Makan', 'Kafe', 'Pasar'])
+        if (ada.contains(k)) k,
     ];
     var items = widget.repo.places.where((p) {
       final okQ = _q.isEmpty ||
@@ -101,19 +115,9 @@ class _PlacesScreenState extends State<PlacesScreen>
           (d != null && d <= _maxKm * 1000);
       return okQ && okK && okD;
     }).toList();
-    switch (_sort) {
-      case 'Termurah':
-        items.sort((a, b) =>
-            _lowPrice(a).compareTo(_lowPrice(b)));
-        break;
-      case 'Paling Dekat':
-        if (_pos != null) {
-          items.sort((a, b) => _distOf(a)!
-              .compareTo(_distOf(b)!));
-        }
-        break;
-      default:
-        items.sort((a, b) => b.rating.compareTo(a.rating));
+    // Selalu terdekat dulu: radius + kategori sudah cukup sebagai filter.
+    if (_pos != null) {
+      items.sort((a, b) => _distOf(a)!.compareTo(_distOf(b)!));
     }
     return FadeTransition(
       opacity: _fade,
@@ -197,7 +201,7 @@ class _PlacesScreenState extends State<PlacesScreen>
                         color:
                             AppColors.chocolateMuted),
                     suffixIcon: GestureDetector(
-                      onTap: _fetchLoc,
+                      onTap: () => _fetchLoc(paksa: true),
                       child: const Icon(
                           Icons.my_location_outlined,
                           color:
@@ -207,7 +211,7 @@ class _PlacesScreenState extends State<PlacesScreen>
                 ),
                 const SizedBox(height: 10),
                 GestureDetector(
-                  onTap: _fetchLoc,
+                  onTap: () => _fetchLoc(paksa: true),
                   child: Row(
                     children: [
                       _locLoading
@@ -338,62 +342,6 @@ class _PlacesScreenState extends State<PlacesScreen>
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppColors.sand,
-              borderRadius:
-                  BorderRadius.circular(9999),
-            ),
-            child: Row(
-              children:
-                  ['Termurah', 'Paling Dekat', 'Rating Tertinggi']
-                      .map((s) {
-                final sel = _sort == s;
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      if (s == 'Paling Dekat' &&
-                          _pos == null) {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(SnackBar(
-                                content: Text(
-                                    _locLoading
-                                        ? 'Menunggu GPS...'
-                                        : 'GPS: $_locLabel')));
-                        return;
-                      }
-                      setState(() => _sort = s);
-                    },
-                    child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(
-                              vertical: 6),
-                      decoration: BoxDecoration(
-                        color: sel
-                            ? Colors.white
-                            : Colors.transparent,
-                        borderRadius:
-                            BorderRadius.circular(
-                                9999),
-                      ),
-                      child: Text(s,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: sel
-                                  ? const Color(
-                                      0xFF7F2500)
-                                  : AppColors
-                                      .chocolateMuted)),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
           const SizedBox(height: 16),
           ...items.map((p) => Container(
                 margin:
@@ -419,16 +367,16 @@ class _PlacesScreenState extends State<PlacesScreen>
                                 BorderRadius.circular(
                                     18),
                           ),
-                          child: Center(
-                            child: Text(
-                              p.nama.isEmpty
-                                  ? '?'
-                                  : p.nama[0],
-                              style: const TextStyle(
-                                  fontSize: 48,
-                                  fontWeight:
-                                      FontWeight.w800,
-                                  color: Colors.white70),
+                          child: ClipRRect(
+                            borderRadius:
+                                BorderRadius.circular(
+                                    18),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: AppImage(
+                                url: placePhoto(p),
+                                fallbackLetter: p.nama,
+                              ),
                             ),
                           ),
                         ),
@@ -507,6 +455,7 @@ class _PlacesScreenState extends State<PlacesScreen>
                       crossAxisAlignment:
                           WrapCrossAlignment.center,
                       children: [
+                        if (p.rating > 0) ...[
                         Row(
                           mainAxisSize:
                               MainAxisSize.min,
@@ -527,6 +476,8 @@ class _PlacesScreenState extends State<PlacesScreen>
                             style: TextStyle(
                                 color: Color(0xFFDEC0B7),
                                 fontSize: 16)),
+                        ],
+                        if (p.harga.isNotEmpty)
                         Container(
                           padding:
                               const EdgeInsets.symmetric(
@@ -595,60 +546,34 @@ class _PlacesScreenState extends State<PlacesScreen>
                   ],
                 ),
               )),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.sand,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFFEAE0),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.store,
+          if (items.isEmpty)
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.sand,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_off_outlined,
                       color: AppColors.primary),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                    children: [
-                      Text('Daftarkan Warung Dapurmu',
-                          style: TextStyle(
-                              fontSize: 15,
-                              fontWeight:
-                                  FontWeight.w700)),
-                      Text(
-                          'Bantu sobat masak menemukan bahan segar di sekitarmu.',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors
-                                  .chocolateMuted)),
-                    ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                        _locLoading
+                            ? 'Mencari pasar & tempat makan di sekitarmu...'
+                            : _placeErr ??
+                                (_pos == null
+                                    ? 'Lokasi belum aktif. Ketuk "Lokasi saat ini" di atas untuk mengambil lokasi.'
+                                    : 'Belum ada pasar/toko bernama di sekitar (±5 km).'),
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.chocolateMuted)),
                   ),
-                ),
-                TextButton(
-                  onPressed: () =>
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(const SnackBar(
-                              content: Text(
-                                  'Pendaftaran warung dibuka segera.'))),
-                  child:
-                      const Text('Daftar Sekarang ›',
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight:
-                                  FontWeight.w700)),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
               ],
             ),
           ),

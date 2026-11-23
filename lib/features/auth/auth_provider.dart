@@ -90,7 +90,7 @@ class AuthProvider extends ChangeNotifier {
         );
         _googleSiap = true;
       }
-      final akun = await _google!.signIn();
+      final akun = await _pilihAkunGoogle();
       if (akun == null) throw 'Masuk dibatalkan.';
       final idToken = (await akun.authentication).idToken;
       if (idToken == null || idToken.isEmpty) {
@@ -126,6 +126,18 @@ class AuthProvider extends ChangeNotifier {
       busy = false;
       notifyListeners();
     }
+  }
+
+  /// Selalu tampilkan pemilih akun Google.
+  /// Tanpa `signOut` dulu, plugin memakai akun terakhir yang tersimpan
+  /// di perangkat sehingga user tak bisa ganti akun.
+  Future<GoogleSignInAccount?> _pilihAkunGoogle() async {
+    try {
+      await _google!.signOut();
+    } catch (_) {
+      // sesi Google lokal memang sudah kosong
+    }
+    return _google!.signIn();
   }
 
   /// Mode tamu: masuk tanpa akun, data tidak tersinkron.

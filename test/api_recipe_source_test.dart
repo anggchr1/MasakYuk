@@ -1,8 +1,29 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:masakyuk/core/api/api_client.dart';
 import 'package:masakyuk/data/api_recipe_source.dart';
 import 'package:masakyuk/data/recipe_photo.dart';
 
 void main() {
+  test('fetchAll mengirim page & kategori ke API', () async {
+    late Uri terakhir;
+    final api = ApiClient(
+      baseUrl: 'https://contoh.test',
+      client: MockClient((req) async {
+        terakhir = req.url;
+        return http.Response('{"data":[]}', 200);
+      }),
+    );
+    final sumber = ApiRecipeSource(api);
+
+    await sumber.fetchAll(page: 3, kategori: 'ayam');
+    expect(terakhir.queryParameters, {'page': '3', 'kategori': 'ayam'});
+
+    await sumber.fetchAll();
+    expect(terakhir.queryParameters, isEmpty);
+  });
+
   test('toRecipe memetakan detail JSON API ke model Recipe', () {
     final r = ApiRecipeSource().toRecipe({
       'id': 2,

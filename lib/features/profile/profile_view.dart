@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
+import '../../core/app_version.dart';
 import '../../core/media/pilih_foto.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_feedback.dart';
@@ -10,6 +11,7 @@ import '../../data/recipe_photo.dart';
 import '../../data/recipe_repository.dart';
 import '../../models/recipe.dart';
 import '../detail/detail_view.dart';
+import '../about/about_view.dart';
 import '../notifications/notifications_view.dart';
 import '../recipe_form/add_recipe_view.dart';
 
@@ -243,7 +245,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             fontSize: 12)),
                     const SizedBox(height: 4),
                     const Text(
-                      'Pencinta masakan rumahan Nusantara. Selalu sedia ulekan batu, terasi bakar, dan daun salam di dapur!',
+                      'Pencinta masakan rumahan. Selalu sedia ulekan batu, terasi bakar, dan daun salam di dapur!',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -668,15 +670,28 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
                 _menuItem(
                   icon: Icons.notifications_outlined,
-                  title: 'Pengaturan Notifikasi',
+                  title: 'Notifikasi',
                   desc:
-                      'Pengingat masak sarapan & inspirasi menu harian',
+                      'Komentar & rating baru di resep yang kamu bagikan',
+                  badge: widget.repo.unreadCount,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (_) =>
                             NotificationsScreen(
                                 repo: widget.repo)),
+                  ),
+                  divider: true,
+                ),
+                _menuItem(
+                  icon: Icons.info_outline,
+                  title: 'Tentang Aplikasi',
+                  desc:
+                      'Info APK, sumber data, dan lisensi pustaka',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const AboutScreen()),
                   ),
                   divider: true,
                 ),
@@ -791,14 +806,14 @@ class _ProfileScreenState extends State<ProfileScreen>
           const Center(
             child: Column(
               children: [
-                Text('MasakYuk v2.0.0 (Warm Spice)',
+                Text('MasakYuk $appVersion (Warm Spice)',
                     style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.55,
                         color: AppColors.chocolateMuted)),
                 Text(
-                    'Dapur Nusantara • Data Jujur & Tanpa Algoritma Rumit',
+                    'Resep untuk masakan rumahan dan fitur pendukung masakan.',
                     style: TextStyle(
                         fontSize: 12,
                         color: AppColors.chocolateMuted)),
@@ -815,6 +830,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     required String title,
     required String desc,
     required VoidCallback onTap,
+    int badge = 0,
     bool divider = false,
   }) {
     return GestureDetector(
@@ -862,6 +878,22 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ],
               ),
             ),
+            if (badge > 0) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+                child: Text('$badge',
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white)),
+              ),
+              const SizedBox(width: 6),
+            ],
             const Icon(Icons.chevron_right,
                 size: 16,
                 color: AppColors.chocolateMuted),
@@ -1147,25 +1179,190 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
+  /// Bantuan & FAQ: sheet dengan pertanyaan yang bisa dibuka satu per satu.
   void _help() {
-    showDialog(
+    const faqs = [
+      (
+        'Bagaimana cara mencari resep?',
+        'Ketik nama masakan di kolom cari, atau masukkan bahan yang kamu punya di Home lalu ketuk Cari.',
+      ),
+      (
+        'Apa arti "estimasi sebagian"?',
+        'Artinya ada bahan yang belum punya data harga, jadi total belanja belum lengkap.',
+      ),
+      (
+        'Apa bedanya Draf dan Terbit?',
+        'Draf hanya bisa dilihat pemiliknya. Terbitkan agar resep muncul di pencarian orang lain.',
+      ),
+      (
+        'Kenapa aku tidak bisa menilai resepku sendiri?',
+        'Rating hanya dari pembaca lain supaya penilaian tetap jujur.',
+      ),
+      (
+        'Dari mana resep bawaan aplikasi?',
+        'Resep bawaan berasal dari dataset terbuka (Cookpad) dan sudah disesuaikan untuk MasakYuk.',
+      ),
+    ];
+
+    showModalBottomSheet<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28)),
-        title: const Text('Bantuan & FAQ'),
-        content: const Text(
-          '1. Ketik bahan di Home untuk cari resep.\n'
-          '2. Label "estimasi sebagian" = ada bahan tanpa data harga.\n'
-          '3. Resep Draf hanya milikmu; Terbitkan agar orang lain bisa menemukan.\n'
-          '4. Resep seed berasal dari dataset terbuka (Cookpad).',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tutup'),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => FractionallySizedBox(
+        heightFactor: 0.85,
+        alignment: Alignment.bottomCenter,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: AppColors.cream,
+            borderRadius:
+                BorderRadius.vertical(top: Radius.circular(32)),
           ),
-        ],
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.chocolateMuted
+                        .withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFEAE0),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.help_center,
+                            color: AppColors.primary),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            Text('Bantuan & FAQ',
+                                style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color:
+                                        AppColors.chocolate)),
+                            Text('Panduan singkat memakai MasakYuk',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors
+                                        .chocolateMuted)),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.close,
+                            color: AppColors.chocolateMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding:
+                        const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    children: [
+                      ...faqs.map(
+                        (f) => Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius:
+                                BorderRadius.circular(20),
+                            border: Border.all(
+                                color: const Color(0xFFDEC0B7)
+                                    .withValues(alpha: 0.3)),
+                          ),
+                          child: Theme(
+                            data: Theme.of(ctx).copyWith(
+                                dividerColor: Colors.transparent),
+                            child: ExpansionTile(
+                              shape:
+                                  const Border(),
+                              collapsedShape: const Border(),
+                              tilePadding:
+                                  const EdgeInsets.symmetric(
+                                      horizontal: 16),
+                              childrenPadding:
+                                  const EdgeInsets.fromLTRB(
+                                      16, 0, 16, 14),
+                              iconColor: AppColors.primary,
+                              collapsedIconColor:
+                                  AppColors.chocolateMuted,
+                              title: Text(f.$1,
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight:
+                                          FontWeight.w700,
+                                      color: AppColors
+                                          .chocolate)),
+                              children: [
+                                Align(
+                                  alignment:
+                                      Alignment.centerLeft,
+                                  child: Text(f.$2,
+                                      style: const TextStyle(
+                                          fontSize: 13,
+                                          height: 1.5,
+                                          color: AppColors
+                                              .chocolateMuted)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFEAE0),
+                          borderRadius:
+                              BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.tips_and_updates,
+                                size: 18,
+                                color: AppColors.primary),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Masih bingung? Coba buka Ensiklopedia Bahan dari Home untuk mengenal bumbu dan takarannya.',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    height: 1.5,
+                                    color: AppColors
+                                        .chocolateMuted),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

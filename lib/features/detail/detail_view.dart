@@ -38,6 +38,7 @@ class _DetailScreenState extends State<DetailScreen>
   final _shot = ScreenshotController();
   final _cmt = TextEditingController();
   bool _bahanOpen = true;
+  bool _langkahOpen = true;
   List<Map<String, dynamic>> _ulasan = [];
   double _rata = 0;
   int _jumlah = 0;
@@ -72,9 +73,12 @@ class _DetailScreenState extends State<DetailScreen>
     try {
       final j = await widget.repo.ulasanResep(widget.recipe.docId);
       if (!mounted) return;
+      final data = (j['data'] as List?) ?? const [];
       setState(() {
-        _ulasan = ((j['data'] as List?) ?? const [])
-            .cast<Map<String, dynamic>>();
+        _ulasan = data
+            .whereType<Map>()
+            .map((e) => e.cast<String, dynamic>())
+            .toList();
         _rata = double.tryParse(
                 (j['rating_rata'] ?? '').toString()) ??
             0;
@@ -390,6 +394,126 @@ class _DetailScreenState extends State<DetailScreen>
                             ),
                           ),
                         const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Text('Langkah',
+                                style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.chocolate)),
+                            const SizedBox(width: 8),
+                            Text(
+                              '(${r.stepsList.length} langkah)',
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.chocolateMuted),
+                            ),
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: () => setState(() =>
+                                  _langkahOpen = !_langkahOpen),
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: AppColors.sand,
+                                  borderRadius:
+                                      BorderRadius.circular(9999),
+                                ),
+                                child: Icon(
+                                    _langkahOpen
+                                        ? Icons.keyboard_arrow_up
+                                        : Icons.keyboard_arrow_down,
+                                    size: 18,
+                                    color: AppColors.chocolateMuted),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (_langkahOpen)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.sand,
+                              borderRadius: BorderRadius.circular(32),
+                            ),
+                            child: Column(
+                              children: [
+                                for (final s
+                                    in r.stepsList.asMap().entries)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        bottom: 10),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          width: 24,
+                                          height: 24,
+                                          decoration:
+                                              const BoxDecoration(
+                                            color: AppColors.primary,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                                '${s.key + 1}',
+                                                style: const TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight:
+                                                        FontWeight
+                                                            .w700,
+                                                    color: Colors
+                                                        .white)),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(s.value,
+                                              style: const TextStyle(
+                                                  fontSize: 13,
+                                                  height: 19.5 / 13,
+                                                  color: AppColors
+                                                      .chocolate)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                if (r.stepsList.isEmpty)
+                                  const Padding(
+                                    padding:
+                                        EdgeInsets.symmetric(
+                                            vertical: 8),
+                                    child: Text(
+                                        'Langkah memasak belum tersedia untuk resep ini.',
+                                        style: TextStyle(
+                                            fontSize: 13,
+                                            color: AppColors
+                                                .chocolateMuted)),
+                                  ),
+                                if (r.stepsList.isNotEmpty)
+                                  TextButton.icon(
+                                    onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => CookingScreen(
+                                            repo: widget.repo,
+                                            recipe: r),
+                                      ),
+                                    ),
+                                    icon: const Icon(
+                                        Icons.play_circle_outline,
+                                        size: 18),
+                                    label: const Text(
+                                        'Masak langkah demi langkah →',
+                                        style: TextStyle(fontSize: 13)),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 12),
                         _comments(),
                         const SizedBox(height: 90),
                       ],
@@ -435,7 +559,7 @@ class _DetailScreenState extends State<DetailScreen>
     );
   }
 
-  /// Bar WAKTU + KESULITAN ala Figma: pil sand berisi dua grup + divider.
+  /// Bar WAKTU + RATING ala Figma: pil sand berisi dua grup + divider.
   String _ratingText() {
     if (_jumlah == 0) return '-';
     return '${_rata.toStringAsFixed(1)} ($_jumlah)';
@@ -769,8 +893,10 @@ class _DetailScreenState extends State<DetailScreen>
   }
 
   Widget _kartuUlasan(Map<String, dynamic> u) {
-    final nama =
-        ((u['pengguna'] as Map?)?['nama_tampil'] ?? 'Pengguna').toString();
+    final pengguna = u['pengguna'];
+    final nama = ((pengguna is Map ? pengguna['nama_tampil'] : pengguna) ??
+            'Pengguna')
+        .toString();
     final skor = (u['skor'] as num?)?.toInt() ?? 0;
     final waktu = DateTime.tryParse((u['created_at'] ?? '').toString());
     return Container(

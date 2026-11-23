@@ -36,16 +36,7 @@ class _CookScreenState extends State<CookScreen>
     _controller.forward();
   }
 
-  static const _chips = [
-    'Semua',
-    'Sarapan',
-    'Cepat & Mudah',
-    'Pedas',
-    'Nusantara',
-    'Ayam & Daging',
-    'Seafood',
-    'Sayuran',
-  ];
+  List<String> get _chips => widget.repo.chips;
 
   String? _priceOf(Recipe r) {
     final e = widget.repo.estCost(r);
@@ -54,10 +45,7 @@ class _CookScreenState extends State<CookScreen>
   }
 
   List<Recipe> get _items {
-    if (_chip == 'Semua') {
-      final res = widget.repo.search({});
-      return [...res.top3, ...res.rest];
-    }
+    if (_chip == 'Semua') return widget.repo.semua;
     return widget.repo.byDisplayCategory(_chip);
   }
 
@@ -286,8 +274,10 @@ class _CookScreenState extends State<CookScreen>
                   fontWeight: FontWeight.w600,
                   fontSize: 12),
               shape: const StadiumBorder(),
-              onSelected: (_) =>
-                  setState(() => _chip = c),
+              onSelected: (_) {
+                setState(() => _chip = c);
+                if (c != 'Semua') widget.repo.muatKategoriLagi(c);
+              },
             ),
           );
         }).toList(),

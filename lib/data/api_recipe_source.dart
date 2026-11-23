@@ -9,10 +9,25 @@ class ApiRecipeSource {
   final ApiClient api;
   ApiRecipeSource([ApiClient? api]) : api = api ?? ApiClient();
 
-  Future<List<Recipe>> fetchAll() async {
-    final index = await api.get('/api/v1/resep');
-    return _list(index);
+  /// [kategori] = slug kategori (mis. `ayam`); [page] mulai dari 1.
+  /// Mengembalikan juga total & jumlah halaman untuk teks "x dari y".
+  Future<({List<Recipe> resep, int total, int halamanTerakhir})> fetchAll({
+    int page = 1,
+    String? kategori,
+  }) async {
+    final index = await api.get('/api/v1/resep', query: {
+      if (page > 1) 'page': '$page',
+      'kategori': ?kategori,
+    });
+    return (
+      resep: _list(index),
+      total: (index['total'] as num?)?.toInt() ?? 0,
+      halamanTerakhir: (index['last_page'] as num?)?.toInt() ?? 1,
+    );
   }
+
+  /// Daftar kategori dari server (id, nama, slug, jumlah_terbit).
+  Future<List<Map<String, dynamic>>> fetchKategori() => _muatKategori();
 
   /// Resep milik sendiri, termasuk draf & terbit (butuh token).
   Future<List<Recipe>> fetchMine() async {

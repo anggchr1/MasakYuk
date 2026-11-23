@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../core/app_version.dart';
 import '../../core/theme/app_theme.dart';
 
 /// Splash ala Stitch: logo + progress + status + versi. ~2,4 dtk lalu onDone.
@@ -152,7 +153,7 @@ class _SplashScreenState extends State<SplashScreen>
                         backgroundColor:
                             AppColors.primary),
                     SizedBox(width: 6),
-                    Text('Versi 1.0.0 ',
+                    Text(appVersion,
                         style: TextStyle(fontSize: 11)),
                   ],
                 ),

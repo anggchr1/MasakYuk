@@ -620,7 +620,9 @@ class _EncyclopediaScreenState
                                       .chocolate)),
                           const SizedBox(height: 2),
                           Text(
-                              '${p.jenis} • ★ ${p.rating} (${p.ulasan})',
+                              p.rating > 0
+                                  ? '${p.jenis} • ★ ${p.rating} (${p.ulasan})'
+                                  : p.jenis,
                               maxLines: 1,
                               overflow: TextOverflow
                                   .ellipsis,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/sapaan.dart';
 import '../../core/widgets/app_image.dart';
 import '../../data/food_photos.dart';
 import '../../data/recipe_repository.dart';
@@ -17,7 +18,10 @@ import 'home_provider.dart';
 class HomeScreen extends StatefulWidget {
   final RecipeRepository repo;
   final VoidCallback? onNeedLogin;
-  const HomeScreen({super.key, required this.repo, this.onNeedLogin});
+  /// Ketuk avatar kanan atas → tab Profil.
+  final VoidCallback? onProfile;
+  const HomeScreen(
+      {super.key, required this.repo, this.onNeedLogin, this.onProfile});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -78,6 +82,8 @@ class _HomeScreenState extends State<HomeScreen>
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 72),
         child: FloatingActionButton(
+          // Unik: Home & Favorit hidup bersamaan di IndexedStack.
+          heroTag: 'fab-home',
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           onPressed: () => Navigator.push(
@@ -115,6 +121,9 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  /// Sapaan sesuai jam perangkat.
+  String _salam() => sapaanJam(DateTime.now());
+
   /// Blok terracotta atas: salam + cari nama + cari bahan. (Figma: rounded-b-40)
   Widget _header() {
     return Container(
@@ -143,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen>
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.3)),
                     Text(
-                      'Good Morning, ${widget.repo.userName.split(' ').first}!',
+                      '${_salam()}, ${widget.repo.userName.split(' ').first}!',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 26,
@@ -154,7 +163,10 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
               ),
-              Stack(
+              GestureDetector(
+                onTap: widget.onProfile,
+                behavior: HitTestBehavior.opaque,
+                child: Stack(
                 clipBehavior: Clip.none,
                 children: [
                   Container(
@@ -193,6 +205,7 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                   ),
                 ],
+              ),
               ),
             ],
           ),
@@ -294,7 +307,7 @@ class _HomeScreenState extends State<HomeScreen>
               const SizedBox(width: 6),
               const Expanded(
                 child: Text(
-                  'Cari Berdasarkan Bahan di Kulkas',
+                  'Cari Berdasarkan Bahan yang ingin dimasak.',
                   style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
@@ -585,7 +598,7 @@ class _HomeScreenState extends State<HomeScreen>
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: HomeProvider.chips.map((c) {
+              children: _hp.chips.map((c) {
                 final sel = _hp.chip == c;
                 return Padding(
                   padding:
@@ -621,7 +634,10 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _knowSection() {
-    final items = widget.repo.encyclopedia.take(4).toList();
+    // Urut abjad dulu supaya kartu mulai dari A, bukan urutan file.
+    final all = [...widget.repo.encyclopedia]
+      ..sort((a, b) => a.nama.toLowerCase().compareTo(b.nama.toLowerCase()));
+    final items = all.take(4).toList();
     if (items.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
@@ -752,9 +768,14 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  void _openPlaces() => Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => PlacesScreen(repo: widget.repo)),
+      );
+
   Widget _placesSection() {
     final items = widget.repo.places.take(2).toList();
-    if (items.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
       child: Column(
@@ -779,17 +800,34 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
               TextButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => PlacesScreen(
-                          repo: widget.repo)),
-                ),
+                onPressed: _openPlaces,
                 child: const Text('Lihat ›'),
               ),
             ],
           ),
           const SizedBox(height: 12),
+          if (items.isEmpty)
+            Card(
+              margin: EdgeInsets.zero,
+              child: ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: AppColors.sand,
+                  child: Icon(Icons.location_off_outlined,
+                      color: AppColors.primary),
+                ),
+                title: const Text('Lokasi belum aktif',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14)),
+                subtitle: const Text(
+                    'Aktifkan lokasi untuk melihat pasar & warung terdekat.',
+                    style: TextStyle(fontSize: 12)),
+                trailing: const Icon(Icons.chevron_right,
+                    color: AppColors.primary),
+                onTap: _openPlaces,
+              ),
+            )
+          else
           ...items.map((p) => Card(
                 margin:
                     const EdgeInsets.only(bottom: 10),
@@ -811,23 +849,13 @@ class _HomeScreenState extends State<HomeScreen>
                   trailing: const Icon(
                       Icons.chevron_right,
                       color: AppColors.primary),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => PlacesScreen(
-                            repo: widget.repo)),
-                  ),
+                  onTap: _openPlaces,
                 ),
               )),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) =>
-                        PlacesScreen(repo: widget.repo)),
-              ),
+              onPressed: _openPlaces,
               icon: const Icon(Icons.explore_outlined,
                   size: 18),
               label: const Text(
