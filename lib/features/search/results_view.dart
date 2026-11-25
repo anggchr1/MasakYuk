@@ -69,7 +69,7 @@ class _ResultsScreenState extends State<ResultsScreen>
     _controller.forward();
     _inputs = Set.of(widget.inputs);
     if (_kategoriMode) {
-      // Halaman 1 + ±100 resep kategori langsung dimuat.
+      // Halaman 1 kategori langsung dimuat.
       widget.repo.muatKategoriLagi(widget.chip!);
     }
   }

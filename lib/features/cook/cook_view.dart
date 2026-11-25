@@ -38,7 +38,7 @@ class _CookScreenState extends State<CookScreen>
     _controller.forward();
   }
 
-  /// Muat 100 resep berikutnya dari tombol, lalu tahan footer di bawah
+  /// Muat 1 halaman resep berikutnya dari tombol, lalu tahan footer di bawah
   /// supaya daftar tidak terlihat melompat ke atas.
   Future<void> _muatLagi() async {
     final diBawah =

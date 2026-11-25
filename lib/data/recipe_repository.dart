@@ -115,7 +115,7 @@ class RecipeRepository extends ChangeNotifier {
       _totalHalKat.clear();
       _totalKat.clear();
       _memuatKat.clear();
-      unawaited(muatLagi()); // isi ulang sampai ±100 untuk tamu
+      unawaited(muatLagi()); // tambah 1 halaman untuk tamu
     } catch (e) {
       debugPrint('Gagal memuat resep publik: $e');
     }
@@ -168,28 +168,28 @@ class RecipeRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Tambah ±100 resep pada satu kategori (7 halaman API sekaligus).
+  /// Tambah 1 halaman (15 resep) pada satu kategori.
   Future<void> muatKategoriLagi(String nama) async {
     final slug = kategori[nama];
     if (slug == null || _memuatKat.contains(nama)) return;
-    if ((_halKat[nama] ?? 0) == 0) await _muatKategori(nama);
+    if ((_halKat[nama] ?? 0) == 0) {
+      // Halaman 1 saja saat chip dibuka; sisanya lewat tombol.
+      await _muatKategori(nama);
+      return;
+    }
     var hal = _halKat[nama] ?? 0;
     final totalHal = _totalHalKat[nama] ?? 1;
     if (hal == 0 || hal >= totalHal) return;
     _memuatKat.add(nama);
     notifyListeners();
     try {
-      var ditambah = 0;
-      while (ditambah < 100 && hal < totalHal) {
-        final hasil =
-            await _apiResep.fetchAll(kategori: slug, page: hal + 1);
-        hal++;
-        if (hasil.resep.isEmpty) break;
-        final sebelum = _system.length;
-        _gabung(hasil.resep);
-        ditambah += _system.length - sebelum;
-      }
+      final hasil =
+          await _apiResep.fetchAll(kategori: slug, page: hal + 1);
+      hal++;
+      _gabung(hasil.resep);
       _halKat[nama] = hal;
+      _totalKat[nama] = hasil.total;
+      _totalHalKat[nama] = hasil.halamanTerakhir;
     } catch (e) {
       debugPrint('Gagal memuat kategori $nama: $e');
     }
@@ -197,21 +197,17 @@ class RecipeRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Muat 100 resep berikutnya (API 15 per halaman) saat tombol ditekan.
+  /// Muat 1 halaman (15 resep) berikutnya saat tombol ditekan.
   Future<void> muatLagi() async {
     if (habis || _memuatLagi || _halaman >= _totalHalaman) return;
     _memuatLagi = true;
     notifyListeners();
     try {
-      var ditambah = 0;
-      while (ditambah < 100 && _halaman < _totalHalaman) {
-        final hasil = await _apiResep.fetchAll(page: _halaman + 1);
-        _halaman++;
-        if (hasil.resep.isEmpty) break;
-        final sebelum = _system.length;
-        _gabung(hasil.resep);
-        ditambah += _system.length - sebelum;
-      }
+      final hasil = await _apiResep.fetchAll(page: _halaman + 1);
+      _halaman++;
+      _gabung(hasil.resep);
+      total = hasil.total;
+      _totalHalaman = hasil.halamanTerakhir;
       if (_halaman >= _totalHalaman) habis = true;
     } catch (e) {
       debugPrint('Gagal memuat resep berikutnya: $e');
@@ -248,7 +244,7 @@ class RecipeRepository extends ChangeNotifier {
     await _muatCacheEnsiklopedia();
     loaded = true;
     notifyListeners();
-    // Isi daftar sampai ±100 resep di latar agar tidak cuma 15.
+    // Tambah 1 halaman di latar agar tombol pertama terasa instan.
     unawaited(muatLagi());
     muatEnsiklopedia(); // jaringan; gagal = pakai cache/assets
   }

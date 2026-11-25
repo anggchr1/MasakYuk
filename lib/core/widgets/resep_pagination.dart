@@ -49,12 +49,12 @@ class ResepPagination extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Text('Memuat 100 resep…'),
+                      const Text('Memuat resep…'),
                     ],
                   )
                 : Text(habis
                     ? 'Semua resep sudah tampil'
-                    : 'Lihat 100 resep lagi'),
+                    : 'Lihat resep lagi'),
           ),
         ),
       ],
