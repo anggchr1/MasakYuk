@@ -1052,7 +1052,13 @@ class _DetailScreenState extends State<DetailScreen>
     final r = widget.recipe;
     try {
       try {
-        await precacheImage(NetworkImage(photoFor(r)), context);
+        final foto = photoFor(r);
+        await precacheImage(
+          foto.startsWith('assets/')
+              ? AssetImage(foto)
+              : NetworkImage(foto),
+          context,
+        );
       } catch (_) {
         // Foto gagal dimuat: kartu tetap dibuat dengan monogram.
       }

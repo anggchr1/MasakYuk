@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Gambar network ala Stitch dengan fallback monogram terracotta.
+/// Gambar network/aset dengan fallback monogram terracotta.
 /// Hotlink Stitch bisa mati sewaktu-waktu — UI tidak boleh ikut mati.
 class AppImage extends StatelessWidget {
   final String url;
@@ -18,6 +18,22 @@ class AppImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final letter =
         fallbackLetter.isEmpty ? '?' : fallbackLetter[0].toUpperCase();
+    Widget gagal() => Container(
+          color: AppColors.primaryContainer,
+          child: Center(
+            child: Text(
+              letter,
+              style: const TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.w800,
+                color: Colors.white70,
+              ),
+            ),
+          ),
+        );
+    if (url.startsWith('assets/')) {
+      return Image.asset(url, fit: fit, errorBuilder: (_, _, _) => gagal());
+    }
     return Image.network(
       url,
       fit: fit,
@@ -33,19 +49,7 @@ class AppImage extends StatelessWidget {
                 ),
               ),
             ),
-      errorBuilder: (_, _, _) => Container(
-        color: AppColors.primaryContainer,
-        child: Center(
-          child: Text(
-            letter,
-            style: const TextStyle(
-              fontSize: 40,
-              fontWeight: FontWeight.w800,
-              color: Colors.white70,
-            ),
-          ),
-        ),
-      ),
+      errorBuilder: (_, _, _) => gagal(),
     );
   }
 }

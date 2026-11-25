@@ -53,6 +53,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
+    // Segarkan jumlah penilai resep sendiri tiap Profil dibuka.
+    widget.repo.muatResepMilikku();
   }
 
   @override
@@ -64,7 +66,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   int get _made => widget.repo.customs.length;
   int get _saved => widget.repo.favorites.length;
   int get _liked => widget.repo.customs
-      .fold<int>(0, (a, r) => a + r.loves);
+      .where((r) => r.isPublished)
+      .fold<int>(0, (a, r) => a + r.jumlahPenilai);
 
   @override
   Widget build(BuildContext context) {
