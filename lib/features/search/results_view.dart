@@ -3,6 +3,7 @@ import '../../core/sapaan.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_feedback.dart';
 import '../../core/widgets/app_image.dart';
+import '../../core/widgets/resep_pagination.dart';
 import '../../data/food_photos.dart';
 import '../../data/money.dart';
 import '../../data/recipe_photo.dart';
@@ -397,34 +398,14 @@ class _ResultsScreenState extends State<ResultsScreen>
                         ),
                       ),
                     ],
-                    if ((_semuaMode || _kategoriMode) &&
-                        items.isNotEmpty &&
-                        totalResep > 0) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        '1–${items.length} dari $totalResep resep',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.chocolateMuted),
+                    if (_semuaMode || _kategoriMode)
+                      ResepPagination(
+                        tampil: items.length,
+                        total: totalResep,
+                        memuat: memuatResep,
+                        habis: habisResep,
+                        onMuatLagi: _muatLagi,
                       ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed:
-                              habisResep || memuatResep
-                                  ? null
-                                  : _muatLagi,
-                          child: Text(memuatResep
-                              ? 'Memuat 100 resep…'
-                              : habisResep
-                                  ? 'Semua resep sudah tampil'
-                                  : 'Lihat 100 resep lagi'),
-                        ),
-                      ),
-                    ],
                     const SizedBox(height: 24),
                   ],
                 ),

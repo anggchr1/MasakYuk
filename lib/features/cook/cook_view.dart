@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/recipe_card.dart';
+import '../../core/widgets/resep_pagination.dart';
 import '../../data/money.dart';
 import '../../data/recipe_repository.dart';
 import '../../models/recipe.dart';
@@ -24,6 +25,7 @@ class _CookScreenState extends State<CookScreen>
   late final Animation<double> _fade;
   String _chip = 'Semua';
   final _titleCtrl = TextEditingController();
+  final _scroll = ScrollController();
 
   @override
   void initState() {
@@ -34,6 +36,20 @@ class _CookScreenState extends State<CookScreen>
     );
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
+    _scroll.addListener(_muatLagiSaatBawah);
+  }
+
+  /// Muat berikutnya saat daftar hampir habis (mirip halaman web).
+  void _muatLagiSaatBawah() {
+    if (_scroll.position.extentAfter < 500) _muatLagi();
+  }
+
+  void _muatLagi() {
+    if (_chip == 'Semua') {
+      widget.repo.muatLagi();
+    } else {
+      widget.repo.muatKategoriLagi(_chip);
+    }
   }
 
   List<String> get _chips => widget.repo.chips;
@@ -76,6 +92,7 @@ class _CookScreenState extends State<CookScreen>
         final items = _items;
         final feat = items.take(3).toList();
         return ListView(
+          controller: _scroll,
           padding: EdgeInsets.zero,
           children: [
             _header(),
@@ -159,6 +176,22 @@ class _CookScreenState extends State<CookScreen>
                                 items[i].docId),
                       ),
                     ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: ResepPagination(
+                tampil: items.length,
+                total: _chip == 'Semua'
+                    ? widget.repo.total
+                    : widget.repo.totalKategori(_chip),
+                memuat: _chip == 'Semua'
+                    ? widget.repo.memuatLagi
+                    : widget.repo.memuatKategori(_chip),
+                habis: _chip == 'Semua'
+                    ? widget.repo.habis
+                    : widget.repo.kategoriHabis(_chip),
+                onMuatLagi: _muatLagi,
+              ),
             ),
             const SizedBox(height: 24),
           ],
@@ -314,6 +347,7 @@ class _CookScreenState extends State<CookScreen>
   void dispose() {
     _controller.dispose();
     _titleCtrl.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 }
