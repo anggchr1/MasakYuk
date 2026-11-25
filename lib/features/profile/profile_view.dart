@@ -42,7 +42,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   late final AnimationController _controller;
   late final Animation<double> _fade;
   bool _mine = true;
-  bool _autoClean = false;
 
   @override
   void initState() {
@@ -697,66 +696,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                         builder: (_) => const AboutScreen()),
                   ),
                   divider: true,
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFFEAE0),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                            Icons.cleaning_services,
-                            size: 17,
-                            color: AppColors.primary),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                                'Pembersihan Draf Otomatis',
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight:
-                                        FontWeight.w700)),
-                            Text(
-                                'Simpan offline cadangan resep dapur lokal',
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors
-                                        .chocolateMuted)),
-                          ],
-                        ),
-                      ),
-                      Switch(
-                        value: _autoClean,
-                        activeThumbColor:
-                            AppColors.primary,
-                        onChanged: (v) async {
-                          setState(
-                              () => _autoClean = v);
-                          if (v) {
-                            final n = await widget.repo
-                                .purgeOldDrafts(30);
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(SnackBar(
-                                    content: Text(n > 0
-                                        ? '$n draf lama dibersihkan.'
-                                        : 'Tidak ada draf lama. Pembersihan aktif.')));
-                          }
-                        },
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),

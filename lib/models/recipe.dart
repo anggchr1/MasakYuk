@@ -96,6 +96,37 @@ class Recipe {
     );
   }
 
+  /// Kebalikan [Recipe.fromJson] — untuk cache offline.
+  Map<String, dynamic> toJson() => {
+        'doc_id': docId,
+        'title': title,
+        'category': category,
+        'tags': tags,
+        'ingredients_raw': ingredientsRaw,
+        'ingredients_keywords': ingredientsKeywords,
+        'steps_list': stepsList,
+        'nutrition': {
+          'calories': calories,
+          'proteins': proteins,
+          'fat': fat,
+          'carbohydrate': carbohydrate,
+        },
+        'has_nutrition': hasNutrition,
+        'nutrition_source': nutritionSource,
+        'loves': loves,
+        'origin': origin,
+        'isPublished': isPublished,
+        'ownerId': ownerId,
+        'description': description,
+        'durationText': durationText,
+        'servings': servings,
+        'estCostManual': estCostManual,
+        'createdAt': createdAt?.toIso8601String(),
+        'gambar_utama': photoUrl == null ? null : {'url': photoUrl},
+        'rating_rata': ratingRata,
+        'jumlah_penilai': jumlahPenilai,
+      };
+
   /// Badge durasi di kartu: master tidak punya data, jadi pakai
   /// heuristik (±5 mnt/langkah). Custom pakai input user.
   String get displayDuration =>

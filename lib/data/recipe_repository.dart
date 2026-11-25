@@ -93,8 +93,10 @@ class RecipeRepository extends ChangeNotifier {
       _custom
         ..clear()
         ..addAll(hasil);
+      unawaited(_simpanCacheMilikku());
     } catch (e) {
       debugPrint('Gagal memuat resep milik sendiri: $e');
+      await _muatCacheTersimpan();
     }
     notifyListeners();
   }
@@ -216,7 +218,7 @@ class RecipeRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _gabung(List<Recipe> baru) {
+  void _gabung(Iterable<Recipe> baru) {
     final ada = {for (final r in _system) r.docId};
     _system.addAll(baru.where((r) => ada.add(r.docId)));
   }
@@ -233,6 +235,7 @@ class RecipeRepository extends ChangeNotifier {
       _totalHalaman = hasil.halamanTerakhir;
     } catch (e) {
       debugPrint('Gagal memuat resep dari API: $e');
+      await _muatCacheTersimpan();
     }
     await muatKategoriResep();
     final pr =
@@ -321,6 +324,68 @@ class RecipeRepository extends ChangeNotifier {
   static double _jarak2(PlaceInfo p, double lat, double lng) {
     final dy = p.lat - lat, dx = p.lng - lng;
     return dx * dx + dy * dy;
+  }
+
+  /// Favorit + resep sendiri disimpan agar tetap bisa dibuka tanpa internet.
+  static const _kFavoritCache = 'resep.favorit.cache';
+  static const _kMilikkuCache = 'resep.milikku.cache';
+
+  Future<void> _simpanCacheFavorit() async {
+    try {
+      final p = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 3));
+      await p.setString(_kFavoritCache,
+          json.encode(favorites.map((r) => r.toJson()).toList()));
+    } catch (e) {
+      debugPrint('Gagal menyimpan cache favorit: $e');
+    }
+  }
+
+  Future<void> _simpanCacheMilikku() async {
+    try {
+      final p = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 3));
+      await p.setString(_kMilikkuCache,
+          json.encode(_custom.map((r) => r.toJson()).toList()));
+    } catch (e) {
+      debugPrint('Gagal menyimpan cache resep sendiri: $e');
+    }
+  }
+
+  /// Isi ulang favorit + resep sendiri dari cache saat API tak terjangkau.
+  Future<void> _muatCacheTersimpan() async {
+    try {
+      final p = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 3));
+      final milik = (json.decode(p.getString(_kMilikkuCache) ?? '[]') as List)
+          .cast<Map<String, dynamic>>()
+          .map(Recipe.fromJson)
+          .toList();
+      final ada = {for (final r in _custom) r.docId};
+      _custom.addAll(milik.where((r) => ada.add(r.docId)));
+      final favorit =
+          (json.decode(p.getString(_kFavoritCache) ?? '[]') as List)
+              .cast<Map<String, dynamic>>()
+              .map(Recipe.fromJson)
+              .toList();
+      final punyaSendiri = {for (final r in _custom) r.docId};
+      _gabung(favorit.where((r) => !punyaSendiri.contains(r.docId)));
+      _favorites.addAll(favorit.map((r) => r.docId));
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Gagal memuat cache resep: $e');
+    }
+  }
+
+  Future<void> _hapusCacheTersimpan() async {
+    try {
+      final p = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 3));
+      await p.remove(_kFavoritCache);
+      await p.remove(_kMilikkuCache);
+    } catch (e) {
+      debugPrint('Gagal menghapus cache resep: $e');
+    }
   }
 
   /// Baca snapshot ensiklopedia terakhir dari perangkat (mode offline).
@@ -572,6 +637,7 @@ class RecipeRepository extends ChangeNotifier {
     final hapus = _favorites.remove(docId);
     if (!hapus) _favorites.add(docId);
     notifyListeners();
+    unawaited(_simpanCacheFavorit());
     if (api.token != null) _kirimFavorit(docId, hapus);
   }
 
@@ -591,9 +657,11 @@ class RecipeRepository extends ChangeNotifier {
       _favorites
         ..clear()
         ..addAll(ids);
+      unawaited(_simpanCacheFavorit());
       notifyListeners();
     } catch (e) {
       debugPrint('Gagal memuat favorit: $e');
+      await _muatCacheTersimpan();
     }
   }
 
@@ -614,6 +682,7 @@ class RecipeRepository extends ChangeNotifier {
       }
       notifyListeners();
       debugPrint('Gagal menyinkronkan favorit: $e');
+      unawaited(_simpanCacheFavorit());
     }
   }
 
@@ -703,25 +772,7 @@ class RecipeRepository extends ChangeNotifier {
       _custom[i] = r;
     }
     notifyListeners();
-  }
-
-  /// Arsipkan draf lebih tua dari [days] hari. Kembalikan jumlah terarsip.
-  Future<int> purgeOldDrafts(int days) async {
-    final cut =
-        DateTime.now().subtract(Duration(days: days));
-    final doomed = _custom
-        .where((r) =>
-            !r.isPublished &&
-            r.createdAt != null &&
-            r.createdAt!.isBefore(cut))
-        .toList();
-    for (final r in doomed) {
-      await _apiResep.archive(r.docId);
-      _custom.remove(r);
-      _favorites.remove(r.docId);
-    }
-    if (doomed.isNotEmpty) notifyListeners();
-    return doomed.length;
+    unawaited(_simpanCacheMilikku());
   }
 
   /// Hapus dari koleksi = arsipkan di server.
@@ -730,6 +781,8 @@ class RecipeRepository extends ChangeNotifier {
     _custom.removeWhere((r) => r.docId == docId);
     _favorites.remove(docId);
     notifyListeners();
+    unawaited(_simpanCacheMilikku());
+    unawaited(_simpanCacheFavorit());
   }
 
   /// Tarik jadi draf / terbitkan lagi.
@@ -740,6 +793,7 @@ class RecipeRepository extends ChangeNotifier {
         ? await _apiResep.tarik(docId)
         : await _apiResep.publish(docId);
     notifyListeners();
+    unawaited(_simpanCacheMilikku());
   }
 
   /// "35 mnt" / "4 orang" -> 35 / 4
@@ -751,6 +805,7 @@ class RecipeRepository extends ChangeNotifier {
     _favorites.clear();
     notifs.clear();
     userAvatarUrl = null;
+    unawaited(_hapusCacheTersimpan());
     notifyListeners();
   }
 }
