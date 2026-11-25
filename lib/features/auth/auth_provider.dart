@@ -228,8 +228,8 @@ class AuthProvider extends ChangeNotifier {
   String _pesan(Object e) {
     if (e is String) return e;
     if (e is ApiException) {
-      if (e.status == 403 && e.body.contains('dihapus')) {
-        return 'Akun ini sudah dihapus.';
+      if (e.status == 403) {
+        return 'Akun dalam masa tenggang penghapusan. Cek email Anda untuk mengaktifkan kembali.';
       }
       return 'Gagal masuk (${e.status}). Coba lagi.';
     }
