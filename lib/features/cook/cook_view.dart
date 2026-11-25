@@ -36,20 +36,23 @@ class _CookScreenState extends State<CookScreen>
     );
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
-    _scroll.addListener(_muatLagiSaatBawah);
   }
 
-  /// Muat berikutnya saat daftar hampir habis (mirip halaman web).
-  void _muatLagiSaatBawah() {
-    if (_scroll.position.extentAfter < 500) _muatLagi();
-  }
-
-  void _muatLagi() {
+  /// Muat 100 resep berikutnya dari tombol, lalu tahan footer di bawah
+  /// supaya daftar tidak terlihat melompat ke atas.
+  Future<void> _muatLagi() async {
+    final diBawah =
+        _scroll.hasClients && _scroll.position.extentAfter < 200;
     if (_chip == 'Semua') {
-      widget.repo.muatLagi();
+      await widget.repo.muatLagi();
     } else {
-      widget.repo.muatKategoriLagi(_chip);
+      await widget.repo.muatKategoriLagi(_chip);
     }
+    if (!mounted || !diBawah) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+    });
   }
 
   List<String> get _chips => widget.repo.chips;

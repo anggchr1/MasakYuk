@@ -68,24 +68,25 @@ class _ResultsScreenState extends State<ResultsScreen>
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
     _inputs = Set.of(widget.inputs);
-    _scroll.addListener(_onScroll);
     if (_kategoriMode) {
       // Halaman 1 + ±100 resep kategori langsung dimuat.
       widget.repo.muatKategoriLagi(widget.chip!);
     }
   }
 
-  /// Muat berikutnya saat daftar hampir habis (mirip halaman web).
-  void _onScroll() {
-    if (_scroll.position.extentAfter < 500) _muatLagi();
-  }
-
-  void _muatLagi() {
+  Future<void> _muatLagi() async {
+    final diBawah =
+        _scroll.hasClients && _scroll.position.extentAfter < 200;
     if (_kategoriMode) {
-      widget.repo.muatKategoriLagi(widget.chip!);
+      await widget.repo.muatKategoriLagi(widget.chip!);
     } else if (_semuaMode) {
-      widget.repo.muatLagi();
+      await widget.repo.muatLagi();
     }
+    if (!mounted || !diBawah) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+    });
   }
 
   @override

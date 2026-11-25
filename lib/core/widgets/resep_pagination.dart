@@ -35,9 +35,24 @@ class ResepPagination extends StatelessWidget {
           height: 56,
           child: ElevatedButton(
             onPressed: habis || memuat ? null : onMuatLagi,
-            child: Text(memuat
-                ? 'Memuat 100 resep…'
-                : habis
+            child: memuat
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color:
+                              Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text('Memuat 100 resep…'),
+                    ],
+                  )
+                : Text(habis
                     ? 'Semua resep sudah tampil'
                     : 'Lihat 100 resep lagi'),
           ),
