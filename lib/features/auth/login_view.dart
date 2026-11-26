@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import 'auth_provider.dart';
 
@@ -261,13 +262,27 @@ class _LoginScreenState extends State<LoginScreen>
                                 if (pesan == null || !context.mounted) {
                                   return;
                                 }
+                                final url = widget.auth.urlReaktivasi;
                                 await showDialog<void>(
                                   context: context,
                                   builder: (d) => AlertDialog(
-                                    title:
-                                        const Text('Akun Perlu Diaktifkan'),
+                                    title: Text(url == null
+                                        ? 'Akun Perlu Diaktifkan'
+                                        : 'Aktifkan Kembali Akun'),
                                     content: Text(pesan),
                                     actions: [
+                                      if (url != null)
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(d);
+                                            launchUrl(
+                                              Uri.parse(url),
+                                              mode: LaunchMode
+                                                  .externalApplication,
+                                            );
+                                          },
+                                          child: const Text('Aktifkan'),
+                                        ),
                                       TextButton(
                                         onPressed: () =>
                                             Navigator.pop(d),

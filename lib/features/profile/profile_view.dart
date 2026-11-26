@@ -1096,9 +1096,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       builder: (d) => AlertDialog(
         title: const Text('Hapus akun?'),
         content: const Text(
-            'Akun akan dinonaktifkan selama 30 hari. Link untuk '
-            'mengaktifkan kembali dikirim ke emailmu. Setelah 30 hari '
-            'akun tidak bisa dipulihkan.'),
+            'Akun akan dinonaktifkan selama 30 hari. Untuk memakainya lagi, '
+            'masuk kembali lalu aktifkan dengan kode OTP yang dikirim ke '
+            'emailmu. Setelah 30 hari akun tidak bisa dipulihkan.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(d, false),

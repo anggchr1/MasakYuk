@@ -38,9 +38,13 @@ class AuthProvider extends ChangeNotifier {
   bool isGuest = false;
   String? error;
 
-  /// Pesan akun yang ditahan (akun baru / akun dihapus) sampai link di
-  /// email diklik. Ditampilkan sebagai popup di layar login.
+  /// Pesan akun yang ditahan (akun baru / akun dihapus) sampai aktivasi
+  /// selesai. Ditampilkan sebagai popup di layar login.
   String? tertahan;
+
+  /// URL halaman web untuk mengaktifkan kembali akun yang dihapus
+  /// (kode OTP dikirim ke email, lalu dimasukkan di halaman itu).
+  String? urlReaktivasi;
 
   /// Pesan info di layar login, mis. setelah akun dihapus.
   String? info;
@@ -87,6 +91,7 @@ class AuthProvider extends ChangeNotifier {
     busy = true;
     error = null;
     tertahan = null;
+    urlReaktivasi = null;
     info = null;
     notifyListeners();
     try {
@@ -135,6 +140,7 @@ class AuthProvider extends ChangeNotifier {
       final pesan = _pesan(e);
       if (e is ApiException && e.status == 403) {
         tertahan = pesan;
+        urlReaktivasi = _urlReaktivasi(e.body);
       } else {
         error = pesan;
       }
@@ -178,6 +184,7 @@ class AuthProvider extends ChangeNotifier {
     isGuest = false;
     error = null;
     tertahan = null;
+    urlReaktivasi = null;
     info = null;
     _hapusSesi();
     notifyListeners();
@@ -252,7 +259,8 @@ class AuthProvider extends ChangeNotifier {
       final dariServer = pesanApiDariBody(e.body);
       if (dariServer != null) return dariServer;
       if (e.status == 403) {
-        return 'Akun belum bisa masuk. Cek email untuk link aktivasi.';
+        return 'Akun belum bisa masuk. Cek email untuk link aktivasi, '
+            'atau aktifkan kembali akun yang dinonaktifkan.';
       }
       return 'Gagal masuk (${e.status}). Coba lagi.';
     }
@@ -280,12 +288,26 @@ class AuthProvider extends ChangeNotifier {
 /// Ambil `pesan`/`message` dari body error API (JSON), atau null.
 /// Backend mengirim pesan akun tertahan lewat `{"pesan": "..."}`.
 String? pesanApiDariBody(String body) {
+  final j = _jsonBody(body);
+  if (j != null) {
+    final p = j['pesan'] ?? j['message'];
+    if (p is String && p.trim().isNotEmpty) return p.trim();
+  }
+  return null;
+}
+
+/// URL halaman web untuk mengaktifkan kembali akun yang dihapus, atau null
+/// bila akun tidak perlu reaktivasi (mis. sekadar verifikasi email).
+String? _urlReaktivasi(String body) {
+  final j = _jsonBody(body);
+  final url = j?['url_reaktivasi'];
+  return url is String && url.trim().isNotEmpty ? url.trim() : null;
+}
+
+Map<String, dynamic>? _jsonBody(String body) {
   try {
     final j = json.decode(body);
-    if (j is Map) {
-      final p = j['pesan'] ?? j['message'];
-      if (p is String && p.trim().isNotEmpty) return p.trim();
-    }
+    if (j is Map) return j.cast<String, dynamic>();
   } catch (_) {
     // Bukan JSON (mis. halaman HTML 404): pakai pesan umum.
   }
