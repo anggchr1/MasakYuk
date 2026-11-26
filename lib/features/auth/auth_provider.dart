@@ -42,9 +42,12 @@ class AuthProvider extends ChangeNotifier {
   /// selesai. Ditampilkan sebagai popup di layar login.
   String? tertahan;
 
-  /// URL halaman web untuk mengaktifkan kembali akun yang dihapus
-  /// (kode OTP dikirim ke email, lalu dimasukkan di halaman itu).
-  String? urlReaktivasi;
+  /// True bila akun yang ditahan adalah akun yang dihapus dan bisa
+  /// diaktifkan kembali dari aplikasi (layar reaktivasi OTP).
+  bool perluReaktivasi = false;
+
+  /// Email akun yang ditahan, untuk mengisi otomatis kolom email.
+  String? surelTertahan;
 
   /// Pesan info di layar login, mis. setelah akun dihapus.
   String? info;
@@ -91,7 +94,8 @@ class AuthProvider extends ChangeNotifier {
     busy = true;
     error = null;
     tertahan = null;
-    urlReaktivasi = null;
+    perluReaktivasi = false;
+    surelTertahan = null;
     info = null;
     notifyListeners();
     try {
@@ -123,24 +127,19 @@ class AuthProvider extends ChangeNotifier {
       if (token == null || token.isEmpty) {
         throw 'Server tidak mengirim token.';
       }
-      api.token = token;
-      repo.userName =
-          (pengguna['nama_tampil'] ?? akun.displayName ?? 'Sobat MasakYuk')
-              .toString();
-      repo.userEmail = (pengguna['surel'] ?? akun.email ?? '').toString();
-      repo.userAvatarUrl = ((pengguna['foto'] as Map?)?['url'])?.toString();
-      isGuest = false;
-      loggedIn = true;
-      await _simpanSesi(token);
-      await repo.muatResepMilikku();
-      await repo.muatFavorit();
-      await repo.muatNotifikasi();
-      await PushService.daftarkan(repo);
+      await _masukSebagai(
+        pengguna,
+        token,
+        namaCadangan: akun.displayName,
+        surelCadangan: akun.email,
+      );
     } catch (e) {
       final pesan = _pesan(e);
       if (e is ApiException && e.status == 403) {
+        final info = infoReaktivasiDariBody(e.body);
         tertahan = pesan;
-        urlReaktivasi = _urlReaktivasi(e.body);
+        perluReaktivasi = info.perlu;
+        surelTertahan = info.surel;
       } else {
         error = pesan;
       }
@@ -148,6 +147,88 @@ class AuthProvider extends ChangeNotifier {
       busy = false;
       notifyListeners();
     }
+  }
+
+  /// Minta kode OTP reaktivasi dikirim ke email akun yang dinonaktifkan.
+  Future<bool> kirimOtp(String surel) async {
+    if (busy) return false;
+    busy = true;
+    error = null;
+    notifyListeners();
+    try {
+      await api.post(
+        '/api/v1/auth/reaktivasi/kirim',
+        body: {'surel': surel},
+      );
+      return true;
+    } catch (e) {
+      error = _pesan(e);
+      return false;
+    } finally {
+      busy = false;
+      notifyListeners();
+    }
+  }
+
+  /// Cocokkan kode OTP; bila benar akun aktif lagi dan langsung masuk.
+  Future<bool> verifikasiOtp(String surel, String kode) async {
+    if (busy) return false;
+    busy = true;
+    error = null;
+    notifyListeners();
+    try {
+      final res = await api.post(
+        '/api/v1/auth/reaktivasi/verifikasi',
+        body: {'surel': surel, 'kode': kode},
+      );
+      final data = (res as Map).cast<String, dynamic>();
+      final pengguna = (data['pengguna'] as Map?) ?? const {};
+      final token = data['token'] as String?;
+      if (token == null || token.isEmpty) {
+        throw 'Server tidak mengirim token.';
+      }
+      await _masukSebagai(pengguna, token, surelCadangan: surel);
+      return true;
+    } catch (e) {
+      error = _pesan(e);
+      return false;
+    } finally {
+      busy = false;
+      notifyListeners();
+    }
+  }
+
+  /// Kembali dari layar reaktivasi ke layar login biasa.
+  void batalkanReaktivasi() {
+    perluReaktivasi = false;
+    surelTertahan = null;
+    tertahan = null;
+    error = null;
+    notifyListeners();
+  }
+
+  /// Simpan sesi setelah login berhasil (Google maupun OTP reaktivasi).
+  Future<void> _masukSebagai(
+    Map pengguna,
+    String token, {
+    String? namaCadangan,
+    String? surelCadangan,
+  }) async {
+    api.token = token;
+    repo.userName =
+        (pengguna['nama_tampil'] ?? namaCadangan ?? 'Sobat MasakYuk').toString();
+    repo.userEmail = (pengguna['surel'] ?? surelCadangan ?? '').toString();
+    repo.userAvatarUrl = ((pengguna['foto'] as Map?)?['url'])?.toString();
+    isGuest = false;
+    loggedIn = true;
+    perluReaktivasi = false;
+    tertahan = null;
+    surelTertahan = null;
+    await _simpanSesi(token);
+    await repo.muatResepMilikku();
+    await repo.muatFavorit();
+    await repo.muatNotifikasi();
+    await PushService.daftarkan(repo);
   }
 
   /// Selalu tampilkan pemilih akun Google.
@@ -184,7 +265,8 @@ class AuthProvider extends ChangeNotifier {
     isGuest = false;
     error = null;
     tertahan = null;
-    urlReaktivasi = null;
+    perluReaktivasi = false;
+    surelTertahan = null;
     info = null;
     _hapusSesi();
     notifyListeners();
@@ -202,6 +284,8 @@ class AuthProvider extends ChangeNotifier {
     isGuest = false;
     error = null;
     tertahan = null;
+    perluReaktivasi = false;
+    surelTertahan = null;
     info = pesan;
     await _hapusSesi();
     notifyListeners();
@@ -296,12 +380,19 @@ String? pesanApiDariBody(String body) {
   return null;
 }
 
-/// URL halaman web untuk mengaktifkan kembali akun yang dihapus, atau null
-/// bila akun tidak perlu reaktivasi (mis. sekadar verifikasi email).
-String? _urlReaktivasi(String body) {
+/// Info reaktivasi dari body 403 API: perlu/tidak, email akun, dan URL web.
+({bool perlu, String? surel, String? url}) infoReaktivasiDariBody(String body) {
   final j = _jsonBody(body);
-  final url = j?['url_reaktivasi'];
-  return url is String && url.trim().isNotEmpty ? url.trim() : null;
+  String? teks(Object? v) {
+    if (v is String && v.trim().isNotEmpty) return v.trim();
+    return null;
+  }
+
+  return (
+    perlu: j?['reaktivasi'] == true,
+    surel: teks(j?['surel']),
+    url: teks(j?['url_reaktivasi']),
+  );
 }
 
 Map<String, dynamic>? _jsonBody(String body) {

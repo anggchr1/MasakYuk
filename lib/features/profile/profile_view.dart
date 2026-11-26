@@ -247,7 +247,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             fontSize: 12)),
                     const SizedBox(height: 4),
                     const Text(
-                      'Pencinta masakan rumahan. Selalu sedia ulekan batu, terasi bakar, dan daun salam di dapur!',
+                      'Pengguna MasakYuk untuk berbagi resep masakan rumahan. ',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

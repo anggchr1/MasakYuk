@@ -11,6 +11,7 @@ import 'core/widgets/bottom_nav.dart';
 import 'data/recipe_repository.dart';
 import 'features/auth/auth_provider.dart';
 import 'features/auth/login_view.dart';
+import 'features/auth/reaktivasi_view.dart';
 import 'features/cook/cook_view.dart';
 import 'features/splash/splash_view.dart';
 import 'features/favorites/favorites_view.dart';
@@ -102,10 +103,12 @@ class _MasakYukAppState extends State<MasakYukApp> {
                   onProfileSaved: _auth.simpanProfil,
                   onHapusAkun: _auth.hapusAkun,
                 )
-              : LoginScreen(
-                  auth: _auth,
-                  onGuest: _auth.loginAsGuest,
-                );
+              : _auth.perluReaktivasi
+                  ? ReaktivasiScreen(auth: _auth)
+                  : LoginScreen(
+                      auth: _auth,
+                      onGuest: _auth.loginAsGuest,
+                    );
         },
       ),
     );
