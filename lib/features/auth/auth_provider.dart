@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -35,6 +37,13 @@ class AuthProvider extends ChangeNotifier {
   bool siap = false; // sesi tersimpan sudah dicek saat app dibuka
   bool isGuest = false;
   String? error;
+
+  /// Pesan akun yang ditahan (akun baru / akun dihapus) sampai link di
+  /// email diklik. Ditampilkan sebagai popup di layar login.
+  String? tertahan;
+
+  /// Pesan info di layar login, mis. setelah akun dihapus.
+  String? info;
 
   bool _googleSiap = false;
   GoogleSignIn? _google;
@@ -77,6 +86,8 @@ class AuthProvider extends ChangeNotifier {
     if (busy) return;
     busy = true;
     error = null;
+    tertahan = null;
+    info = null;
     notifyListeners();
     try {
       if (googleClientId.isEmpty) {
@@ -121,7 +132,12 @@ class AuthProvider extends ChangeNotifier {
       await repo.muatNotifikasi();
       await PushService.daftarkan(repo);
     } catch (e) {
-      error = _pesan(e);
+      final pesan = _pesan(e);
+      if (e is ApiException && e.status == 403) {
+        tertahan = pesan;
+      } else {
+        error = pesan;
+      }
     } finally {
       busy = false;
       notifyListeners();
@@ -161,13 +177,16 @@ class AuthProvider extends ChangeNotifier {
     loggedIn = false;
     isGuest = false;
     error = null;
+    tertahan = null;
+    info = null;
     _hapusSesi();
     notifyListeners();
   }
 
   /// Hapus akun di server (lunak + cabut token), lalu bersihkan sesi lokal.
   Future<void> hapusAkun() async {
-    await api.delete('/api/v1/saya');
+    final res = await api.delete('/api/v1/saya');
+    final pesan = res is Map ? res['pesan']?.toString() : null;
     await PushService.lepas();
     api.token = null;
     repo.logout();
@@ -175,6 +194,8 @@ class AuthProvider extends ChangeNotifier {
     loggedIn = false;
     isGuest = false;
     error = null;
+    tertahan = null;
+    info = pesan;
     await _hapusSesi();
     notifyListeners();
   }
@@ -228,8 +249,10 @@ class AuthProvider extends ChangeNotifier {
   String _pesan(Object e) {
     if (e is String) return e;
     if (e is ApiException) {
+      final dariServer = pesanApiDariBody(e.body);
+      if (dariServer != null) return dariServer;
       if (e.status == 403) {
-        return 'Akun dalam masa tenggang penghapusan. Cek email Anda untuk mengaktifkan kembali.';
+        return 'Akun belum bisa masuk. Cek email untuk link aktivasi.';
       }
       return 'Gagal masuk (${e.status}). Coba lagi.';
     }
@@ -252,4 +275,19 @@ class AuthProvider extends ChangeNotifier {
     return 'Server tidak bisa dihubungi ($apiBaseUrl). '
         'Pastikan HP & PC satu Wi-Fi dan backend jalan di 0.0.0.0:8000.';
   }
+}
+
+/// Ambil `pesan`/`message` dari body error API (JSON), atau null.
+/// Backend mengirim pesan akun tertahan lewat `{"pesan": "..."}`.
+String? pesanApiDariBody(String body) {
+  try {
+    final j = json.decode(body);
+    if (j is Map) {
+      final p = j['pesan'] ?? j['message'];
+      if (p is String && p.trim().isNotEmpty) return p.trim();
+    }
+  } catch (_) {
+    // Bukan JSON (mis. halaman HTML 404): pakai pesan umum.
+  }
+  return null;
 }

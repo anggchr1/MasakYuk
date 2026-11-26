@@ -253,8 +253,31 @@ class _LoginScreenState extends State<LoginScreen>
                       height: 52,
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed:
-                            widget.auth.busy ? null : widget.auth.loginWithGoogle,
+                        onPressed: widget.auth.busy
+                            ? null
+                            : () async {
+                                await widget.auth.loginWithGoogle();
+                                final pesan = widget.auth.tertahan;
+                                if (pesan == null || !context.mounted) {
+                                  return;
+                                }
+                                await showDialog<void>(
+                                  context: context,
+                                  builder: (d) => AlertDialog(
+                                    title:
+                                        const Text('Akun Belum Aktif'),
+                                    content: Text(pesan),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(d),
+                                        child:
+                                            const Text('Mengerti'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: AppColors.chocolate,
@@ -297,6 +320,17 @@ class _LoginScreenState extends State<LoginScreen>
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                    if (widget.auth.info != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        widget.auth.info!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green.shade700,
                         ),
                       ),
                     ],
