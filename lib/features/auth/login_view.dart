@@ -265,7 +265,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   context: context,
                                   builder: (d) => AlertDialog(
                                     title:
-                                        const Text('Akun Belum Aktif'),
+                                        const Text('Akun Perlu Diaktifkan'),
                                     content: Text(pesan),
                                     actions: [
                                       TextButton(
