@@ -23,4 +23,28 @@ void main() {
         const Offset(0, -300));
     expect(find.byType(DropdownButton<String>), findsWidgets);
   });
+
+  testWidgets('tidak ada kategori terpilih & batal tag baru tidak error',
+      (t) async {
+    SharedPreferences.setMockInitialValues({});
+    final repo = RecipeRepository();
+
+    await t.pumpWidget(MaterialApp(home: AddRecipeScreen(repo: repo)));
+    await t.pumpAndSettle();
+
+    // Awalan: semua chip kategori belum terpilih.
+    final chip = t.widget<FilterChip>(find.widgetWithText(FilterChip, 'Tradisional'));
+    expect(chip.selected, isFalse);
+
+    await t.dragUntilVisible(find.text('Tag Baru'), find.byType(ListView),
+        const Offset(0, -300));
+    await t.tap(find.text('Tag Baru'));
+    await t.pumpAndSettle();
+    await t.tap(find.descendant(
+        of: find.byType(AlertDialog), matching: find.text('Batal')));
+    await t.pumpAndSettle();
+
+    expect(t.takeException(), isNull);
+    expect(find.text('Tag Kategori Baru'), findsNothing);
+  });
 }

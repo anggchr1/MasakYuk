@@ -92,10 +92,10 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
   final _desc = TextEditingController();
   final _price = TextEditingController();
   final _porsi = TextEditingController(text: '4');
-  final Set<String> _kategori = {'Tradisional'};
+  final Set<String> _kategori = {};
   final Set<String> _tagTambahan = {};
-  bool _publish = true;
   bool _saving = false;
+  bool _savingPublish = false;
   // Foto sampul: bytes = belum diunggah, id = sudah ada di Cloudinary.
   Uint8List? _fotoBytes;
   String? _fotoUrl;
@@ -152,7 +152,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
 
     _title.text = e.title;
     _desc.text = e.description;
-    _publish = e.isPublished;
     _fotoUrl = e.photoUrl;
     final p = RegExp(r'(\d+)').firstMatch(e.servings ?? '');
     if (p != null) _porsi.text = p.group(1)!;
@@ -284,43 +283,12 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
             ],
           ),
           centerTitle: true,
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Center(
-                child: GestureDetector(
-                  onTap: _saving ? null : () => _save(false),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.sand,
-                      borderRadius: BorderRadius.circular(9999),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check,
-                            size: 14, color: AppColors.chocolate),
-                        SizedBox(width: 4),
-                        Text('Simpan',
-                            style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.chocolate)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
         body: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
           children: [
             _tips(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             _fotoSampul(preview, shownTitle),
             const SizedBox(height: 18),
             _bagianKategori(),
@@ -334,11 +302,8 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
             _bagianBahan(),
             const SizedBox(height: 20),
             _bagianLangkah(),
-            const SizedBox(height: 8),
-            _toggleKomunitas(),
-            const SizedBox(height: 16),
-            _tombolSimpan(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            _aksiBawah(),
           ],
         ),
       ),
@@ -349,30 +314,29 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
 
   Widget _tips() {
     return Container(
-      padding: const EdgeInsets.all(17),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.sand,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
             color: const Color(0xFFDEC0B7).withValues(alpha: 0.4)),
       ),
       child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.soup_kitchen, color: AppColors.primary),
-          SizedBox(width: 12),
+          Icon(Icons.soup_kitchen, color: AppColors.primary, size: 18),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Fokus Memasak Nyata',
                     style:
-                        TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                        TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                 Text(
-                  'Lengkapi takaran bahan, durasi tiap langkah, dan foto proses bila perlu. Tanpa foto sampul, kami pilihkan sesuai kategori. Foto otomatis dikompres agar hemat kuota.',
+                  'Lengkapi takaran, durasi, dan foto proses. Tanpa foto sampul, kami pakai gambar bawaan resep.',
                   style: TextStyle(
-                      fontSize: 12,
-                      height: 19.5 / 12,
+                      fontSize: 11,
+                      height: 1.4,
                       color: AppColors.chocolateMuted),
                 ),
               ],
@@ -499,17 +463,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: const [
-            Expanded(
-              child: Text('Kategori & Karakter',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
-            ),
-            Text('Bisa pilih lebih dari satu',
-                style: TextStyle(
-                    fontSize: 11, color: AppColors.chocolateMuted)),
-          ],
-        ),
+        _kepalaBagian('Kategori & Karakter', 'Bisa pilih lebih dari satu'),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -547,14 +501,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        Text(
-          _kategori.isEmpty
-              ? 'Belum ada kategori dipilih — foto memakai gambar bawaan.'
-              : 'Tanpa unggahan, foto memakai gambar bawaan resep.',
-          style: const TextStyle(
-              fontSize: 11, color: AppColors.chocolateMuted),
-        ),
       ],
     );
   }
@@ -591,16 +537,55 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
     return Row(
       children: [
         Expanded(
-          child: _kotakAngka(
-            'Porsi',
-            _porsi,
-            'orang',
-            Icons.group,
+          child: _kotakInfo(
+            label: 'Porsi',
+            icon: Icons.group_outlined,
+            catatan: 'perkiraan sajian',
+            isi: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 42,
+                  child: TextField(
+                    controller: _porsi,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w800, fontSize: 16),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      filled: false,
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+                const Text('orang',
+                    style: TextStyle(
+                        fontSize: 11, color: AppColors.chocolateMuted)),
+              ],
+            ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Expanded(
-          child: _kotakTotalWaktu(),
+          child: _kotakInfo(
+            label: 'Total Waktu',
+            icon: Icons.schedule,
+            catatan: 'dari durasi langkah',
+            isi: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('$_totalMenit',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w800, fontSize: 16)),
+                const SizedBox(width: 4),
+                const Text('menit',
+                    style: TextStyle(
+                        fontSize: 11, color: AppColors.chocolateMuted)),
+              ],
+            ),
+          ),
         ),
       ],
     );
@@ -611,24 +596,36 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.sand,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
-              Icon(Icons.payments_outlined,
+            children: [
+              const Icon(Icons.payments_outlined,
                   color: AppColors.primary, size: 20),
-              SizedBox(width: 8),
-              Expanded(
+              const SizedBox(width: 8),
+              const Expanded(
                 child: Text('Estimasi Belanja Bahan',
                     style: TextStyle(fontWeight: FontWeight.w700)),
               ),
-              Chip(label: Text('±Rp • estimasi sebagian')),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+                child: const Text('±Rp',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary)),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           TextField(
             controller: _price,
             keyboardType: TextInputType.number,
@@ -668,31 +665,13 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Bahan-Bahan',
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.chocolate)),
-                  Text('Takaran, satuan, dan grup persiapan dapur',
-                      style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          color: AppColors.chocolateMuted)),
-                ],
-              ),
-            ),
-            _pillTambah(
-              'Bahan',
-              () => setState(() => _grup.first.baris.add(_BarisBahan())),
-            ),
-          ],
+        _kepalaBagian(
+          'Bahan-Bahan',
+          'Takaran, satuan, dan grup persiapan dapur',
+          aksi: _pillTambah(
+            'Bahan',
+            () => setState(() => _grup.first.baris.add(_BarisBahan())),
+          ),
         ),
         const SizedBox(height: 10),
         for (var g = 0; g < _grup.length; g++) _grupBahan(g),
@@ -877,25 +856,13 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Langkah Memasak',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
-                  Text('Setiap langkah bisa diberi waktu dan foto proses',
-                      style: TextStyle(
-                          fontSize: 11, color: AppColors.chocolateMuted)),
-                ],
-              ),
-            ),
-            _pillTambah(
-              'Langkah',
-              () => setState(() => _langkah.add(_LangkahForm())),
-            ),
-          ],
+        _kepalaBagian(
+          'Langkah Memasak',
+          'Setiap langkah bisa diberi waktu dan foto proses',
+          aksi: _pillTambah(
+            'Langkah',
+            () => setState(() => _langkah.add(_LangkahForm())),
+          ),
         ),
         const SizedBox(height: 10),
         for (var i = 0; i < _langkah.length; i++) _kartuLangkah(i),
@@ -1076,70 +1043,60 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
     );
   }
 
-  Widget _toggleKomunitas() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.sand,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            backgroundColor: Colors.white,
-            child: Icon(Icons.lock_open, size: 18, color: AppColors.primary),
+  Widget _aksiBawah() {
+    Widget isi({required bool publish, required IconData icon, required String label}) {
+      final loading = _saving && _savingPublish == publish;
+      final ikon = loading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2))
+          : Icon(icon, size: 18);
+      if (!publish) {
+        return OutlinedButton.icon(
+          onPressed: _saving ? null : () => _save(false),
+          icon: ikon,
+          label: Text(loading ? 'Menyimpan...' : label),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.chocolate,
+            side: const BorderSide(color: Color(0xFFDEC0B7)),
+            shape: const StadiumBorder(),
+            textStyle:
+                const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
           ),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Terbuka untuk Komunitas',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                Text('Resep dapat dicari dan disukai pengguna lain',
-                    style: TextStyle(
-                        fontSize: 11, color: AppColors.chocolateMuted)),
-              ],
-            ),
-          ),
-          Switch(
-            value: _publish,
-            activeThumbColor: AppColors.primary,
-            onChanged: (v) => setState(() => _publish = v),
-          ),
-        ],
-      ),
-    );
-  }
+        );
+      }
+      return ElevatedButton.icon(
+        onPressed: _saving ? null : () => _save(true),
+        icon: ikon,
+        label: Text(loading ? 'Menyimpan...' : label),
+        style: ElevatedButton.styleFrom(
+          textStyle:
+              const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+        ),
+      );
+    }
 
-  Widget _tombolSimpan() {
     return Row(
       children: [
         Expanded(
           child: SizedBox(
-            height: 52,
-            child: OutlinedButton.icon(
-              onPressed: _saving ? null : () => _save(false),
-              icon: const Icon(Icons.inventory_2_outlined, size: 18),
-              label: const Text('Simpan Draf'),
+            height: 50,
+            child: isi(
+              publish: false,
+              icon: Icons.inventory_2_outlined,
+              label: 'Simpan Draf',
             ),
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
-          flex: 2,
           child: SizedBox(
-            height: 52,
-            child: ElevatedButton.icon(
-              onPressed: _saving ? null : () => _save(_publish),
-              icon: _saving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.cloud_upload_outlined, size: 18),
-              label: Text(_saving ? 'Menyimpan...' : 'Terbitkan Resep'),
+            height: 50,
+            child: isi(
+              publish: true,
+              icon: Icons.rocket_launch_outlined,
+              label: 'Go Publish',
             ),
           ),
         ),
@@ -1148,6 +1105,32 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
   }
 
   // ---------- Helper tampilan ----------
+
+  /// Judul + subjudul bagian; semua bagian memakai gaya yang sama.
+  Widget _kepalaBagian(String judul, String sub, {Widget? aksi}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(judul,
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.chocolate)),
+              const SizedBox(height: 2),
+              Text(sub,
+                  style: const TextStyle(
+                      fontSize: 11, color: AppColors.chocolateMuted)),
+            ],
+          ),
+        ),
+        ?aksi,
+      ],
+    );
+  }
 
   Widget _kartu(Widget child) {
     return Container(
@@ -1212,10 +1195,14 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
     );
   }
 
-  Widget _kotakAngka(String label, TextEditingController ctrl, String unit,
-      IconData icon) {
+  Widget _kotakInfo({
+    required String label,
+    required IconData icon,
+    required String catatan,
+    required Widget isi,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1236,74 +1223,10 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
                       color: AppColors.secondary)),
             ],
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: ctrl,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w800, fontSize: 16),
-                  decoration: const InputDecoration(
-                    filled: false,
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                    isDense: true,
-                  ),
-                ),
-              ),
-              Text(unit,
-                  style: const TextStyle(
-                      fontSize: 11, color: AppColors.chocolateMuted)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Total waktu dihitung dari durasi semua langkah (sama seperti web).
-  Widget _kotakTotalWaktu() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: const Color(0xFFDEC0B7).withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.schedule, size: 14, color: AppColors.secondary),
-              SizedBox(width: 4),
-              Text('Total Waktu',
-                  style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.secondary)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('$_totalMenit',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w800, fontSize: 16)),
-              const SizedBox(width: 4),
-              const Text('menit',
-                  style: TextStyle(
-                      fontSize: 11, color: AppColors.chocolateMuted)),
-            ],
-          ),
-          const Text('dari durasi langkah',
-              style:
-                  TextStyle(fontSize: 9, color: AppColors.chocolateMuted)),
+          SizedBox(height: 28, child: Center(child: isi)),
+          Text(catatan,
+              style: const TextStyle(
+                  fontSize: 9, color: AppColors.chocolateMuted)),
         ],
       ),
     );
@@ -1312,29 +1235,30 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
   // ---------- Aksi ----------
 
   Future<void> _tambahTag() async {
-    final ctrl = TextEditingController();
+    // Tanpa TextEditingController: dialog bisa ditutup kapan saja tanpa
+    // menyisakan controller yang masih dipakai TextField (assertion dispose).
+    var teks = '';
     final nama = await showDialog<String>(
       context: context,
       builder: (d) => AlertDialog(
         title: const Text('Tag Kategori Baru'),
         content: TextField(
-          controller: ctrl,
           autofocus: true,
           textCapitalization: TextCapitalization.words,
           decoration: const InputDecoration(hintText: 'Contoh: Masakan Sunda'),
+          onChanged: (v) => teks = v,
           onSubmitted: (v) => Navigator.pop(d, v),
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(d), child: const Text('Batal')),
           ElevatedButton(
-              onPressed: () => Navigator.pop(d, ctrl.text),
+              onPressed: () => Navigator.pop(d, teks),
               child: const Text('Tambah')),
         ],
       ),
     );
     final bersih = (nama ?? '').trim();
-    ctrl.dispose();
     if (bersih.isEmpty || !mounted) return;
     setState(() {
       _tagTambahan.add(bersih);
@@ -1449,7 +1373,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
     final navigator = Navigator.of(context);
     setState(() {
       _saving = true;
-      _publish = publish;
+      _savingPublish = publish;
     });
 
     try {
