@@ -152,10 +152,10 @@ class _HomeScreenState extends State<HomeScreen>
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.3)),
                     Text(
-                      '${_salam()}, ${widget.repo.userName.split(' ').first}!',
+                      '${_salam()}, ${widget.repo.userName}!',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 26,
+                        fontSize: 24,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.65,
                       ),
