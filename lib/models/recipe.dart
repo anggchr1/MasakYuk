@@ -110,6 +110,8 @@ class Recipe {
   final String? photoUrl; // foto unggahan user (Cloudinary); null = foto kategori
   final double? ratingRata; // rata-rata skor dari server
   final int jumlahPenilai;
+  final String? ownerName; // nama pembuat resep (pemilik)
+  final String? ownerPhotoUrl; // foto profil pembuat (Cloudinary)
 
   const Recipe({
     required this.docId,
@@ -140,6 +142,8 @@ class Recipe {
     this.photoUrl,
     this.ratingRata,
     this.jumlahPenilai = 0,
+    this.ownerName,
+    this.ownerPhotoUrl,
   });
 
   static List<String> _strList(dynamic v) =>
@@ -151,6 +155,11 @@ class Recipe {
   factory Recipe.fromJson(Map<String, dynamic> j) {
     final nut = (j['nutrition'] as Map?) ?? {};
     final hasNut = j['has_nutrition'] as bool? ?? _num(nut['calories']) != null;
+    final pemilik = j['pemilik'] as Map?;
+    final ownerName =
+        (pemilik?['nama_tampil'] ?? j['ownerName'])?.toString();
+    final ownerPhoto = ((pemilik?['foto'] as Map?)?['url'] ?? j['ownerPhotoUrl'])
+        ?.toString();
     final bahanJson =
         (j['bahan_detail'] as List?)?.cast<Map<String, dynamic>>();
     final langkahJson =
@@ -192,6 +201,8 @@ class Recipe {
       photoUrl: ((j['gambar_utama'] as Map?)?['url'])?.toString(),
       ratingRata: double.tryParse((j['rating_rata'] ?? '').toString()),
       jumlahPenilai: (j['jumlah_penilai'] as num?)?.toInt() ?? 0,
+      ownerName: ownerName,
+      ownerPhotoUrl: ownerPhoto,
     );
   }
 
@@ -227,6 +238,8 @@ class Recipe {
         'gambar_utama': photoUrl == null ? null : {'url': photoUrl},
         'rating_rata': ratingRata,
         'jumlah_penilai': jumlahPenilai,
+        'ownerName': ownerName,
+        'ownerPhotoUrl': ownerPhotoUrl,
       };
 
   /// Badge durasi di kartu: master tidak punya data, jadi pakai

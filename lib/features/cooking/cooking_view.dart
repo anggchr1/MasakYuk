@@ -122,6 +122,15 @@ class _CookingScreenState extends State<CookingScreen>
     }).take(6).toList();
   }
 
+  /// Foto langkah dari form; kalau langkah belum punya foto, pakai sampul.
+  String _fotoLangkah(int i) {
+    final d = widget.recipe.langkahDetail;
+    if (i >= 0 && i < d.length && d[i].gambarUrls.isNotEmpty) {
+      return d[i].gambarUrls.first;
+    }
+    return photoFor(widget.recipe);
+  }
+
   void _nav(void Function() go, int target) {
     go();
     _cp.retarget(_targetDetik(target));
@@ -209,7 +218,7 @@ class _CookingScreenState extends State<CookingScreen>
                         height: 224,
                         width: double.infinity,
                         child: AppImage(
-                          url: photoFor(widget.recipe),
+                          url: _fotoLangkah(_cp.index),
                           fallbackLetter:
                               widget.recipe.title,
                         ),

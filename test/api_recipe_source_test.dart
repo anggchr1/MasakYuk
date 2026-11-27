@@ -123,6 +123,23 @@ void main() {
     expect(r.displayRating, '5.0');
   });
 
+  test('pemilik resep dipetakan ke nama & foto pembuat', () {
+    final api = ApiRecipeSource();
+    final r = api.toRecipe({
+      'id': 4,
+      'judul': 'Rendang',
+      'pemilik': {
+        'id': 3,
+        'nama_tampil': 'Chef Angga',
+        'foto': {'url': 'https://contoh.test/avatar.jpg'},
+      },
+    });
+
+    expect(r.ownerName, 'Chef Angga');
+    expect(r.ownerPhotoUrl, 'https://contoh.test/avatar.jpg');
+    expect(api.toRecipe({'id': 5, 'judul': 'Tanpa Pemilik'}).ownerName, isNull);
+  });
+
   test('jumlah_favorit dari API menjadi loves (dihitung di Profil)', () {
     final r = ApiRecipeSource().toRecipe({
       'id': 26,

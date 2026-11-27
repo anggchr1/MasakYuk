@@ -296,6 +296,8 @@ class _DetailScreenState extends State<DetailScreen>
                                   AppColors.chocolateMuted),
                         ),
                         const SizedBox(height: 12),
+                        _pembuat(r),
+                        const SizedBox(height: 12),
                         _metaBar(r.displayDuration,
                             _ratingText()),
                         const SizedBox(height: 12),
@@ -622,6 +624,72 @@ class _DetailScreenState extends State<DetailScreen>
   String _ratingText() {
     if (_jumlah == 0) return '-';
     return '${_rata.toStringAsFixed(1)} ($_jumlah)';
+  }
+
+  /// Profil pembuat resep (seperti di web), di bawah kategori dan
+  /// di atas bar waktu + rating.
+  Widget _pembuat(Recipe r) {
+    final nama = (r.ownerName ?? '').trim();
+    final tampil = nama.isEmpty ? 'MasakYuk' : nama;
+    final foto = r.ownerPhotoUrl;
+    return Row(
+      children: [
+        ClipOval(
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: foto != null && foto.isNotEmpty
+                ? AppImage(url: foto, fallbackLetter: tampil)
+                : Container(
+                    color: AppColors.primaryContainer,
+                    child: Center(
+                      child: Text(
+                        tampil[0].toUpperCase(),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Pembuat resep',
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                      color: AppColors.chocolateMuted)),
+              Text(tampil,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.chocolate)),
+            ],
+          ),
+        ),
+        if (r.kategoriNama.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.sand,
+              borderRadius: BorderRadius.circular(9999),
+            ),
+            child: Text(r.kategoriNama.first,
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.chocolateMuted)),
+          ),
+      ],
+    );
   }
 
   Widget _metaBar(String waktu, String rating) {

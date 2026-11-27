@@ -675,30 +675,22 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
         ),
         const SizedBox(height: 10),
         for (var g = 0; g < _grup.length; g++) _grupBahan(g),
-        const SizedBox(height: 6),
-        GestureDetector(
-          onTap: () => setState(() => _grup.add(
-              _GrupBahan(judulAwal: 'Bahan Tambahan ${_grup.length + 1}')
-                ..baris.add(_BarisBahan()))),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(9999),
-              border: Border.all(color: const Color(0xFFDEC0B7)),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.create_new_folder_outlined,
-                    size: 16, color: AppColors.chocolate),
-                SizedBox(width: 6),
-                Text('Buat Grup Bahan Baru',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.chocolate)),
-              ],
+        const SizedBox(height: 2),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => setState(() => _grup.add(
+                _GrupBahan(judulAwal: 'Bahan Tambahan ${_grup.length + 1}')
+                  ..baris.add(_BarisBahan()))),
+            icon: const Icon(Icons.create_new_folder_outlined, size: 16),
+            label: const Text('Buat Grup Bahan Baru'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.chocolate,
+              side: const BorderSide(color: Color(0xFFDEC0B7)),
+              minimumSize: const Size.fromHeight(44),
+              shape: const StadiumBorder(),
+              textStyle: const TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w700),
             ),
           ),
         ),
@@ -710,16 +702,21 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
     final grup = _grup[g];
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
       decoration: BoxDecoration(
-        color: AppColors.sand,
-        borderRadius: BorderRadius.circular(18),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: const Color(0xFFDEC0B7).withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              const Icon(Icons.folder_outlined,
+                  size: 16, color: AppColors.primary),
+              const SizedBox(width: 6),
               Expanded(
                 child: TextField(
                   controller: grup.judul,
@@ -734,12 +731,23 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
                   ),
                 ),
               ),
-              Text('${grup.baris.length} item',
-                  style: const TextStyle(
-                      fontSize: 11, color: AppColors.chocolateMuted)),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.sand,
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+                child: Text('${grup.baris.length} item',
+                    style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.chocolateMuted)),
+              ),
               if (_grup.length > 1)
                 IconButton(
                   tooltip: 'Hapus grup',
+                  visualDensity: VisualDensity.compact,
                   icon: const Icon(Icons.delete_outline, size: 18),
                   onPressed: () => setState(() {
                     _grup.removeAt(g).dispose();
@@ -747,6 +755,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
                 ),
             ],
           ),
+          const SizedBox(height: 6),
           for (var b = 0; b < grup.baris.length; b++) _barisBahan(grup, b),
           TextButton.icon(
             onPressed: () => setState(() => grup.baris.add(_BarisBahan())),
@@ -763,9 +772,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
     final baris = grup.baris[b];
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.fromLTRB(10, 4, 4, 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.sand.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -775,18 +784,19 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
               Expanded(
                 child: TextField(
                   controller: baris.nama,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: 'Nama bahan (misal: bawang merah)',
                     isDense: true,
                     filled: false,
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
+                    contentPadding: EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
               ),
               IconButton(
                 tooltip: 'Hapus bahan',
-                icon: const Icon(Icons.delete_outline, size: 20),
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.close, size: 18),
                 onPressed: grup.baris.length > 1
                     ? () => setState(() {
                           grup.baris.removeAt(b).dispose();
@@ -795,30 +805,36 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
               ),
             ],
           ),
-          const SizedBox(height: 6),
           Row(
             children: [
               SizedBox(
-                width: 96,
+                width: 84,
+                height: 42,
                 child: TextField(
                   controller: baris.jumlah,
                   textAlign: TextAlign.center,
                   keyboardType: const TextInputType.numberWithOptions(
                       decimal: true),
-                  decoration: const InputDecoration(
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w700),
+                  decoration: InputDecoration(
                     hintText: 'Jumlah',
+                    hintStyle: const TextStyle(
+                        fontSize: 12, color: AppColors.chocolateMuted),
                     isDense: true,
+                    fillColor: Colors.white,
                     contentPadding:
-                        EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Container(
+                  height: 42,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: AppColors.sand,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(9999),
                   ),
                   child: DropdownButtonHideUnderline(
@@ -874,12 +890,12 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
     final l = _langkah[i];
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: const Color(0xFFDEC0B7).withValues(alpha: 0.3)),
+            color: const Color(0xFFDEC0B7).withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -887,20 +903,26 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
           Row(
             children: [
               CircleAvatar(
-                radius: 13,
+                radius: 12,
                 backgroundColor: AppColors.primary,
                 child: Text('${i + 1}',
                     style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w800)),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Langkah ${i + 1}',
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.chocolate)),
+              ),
               IconButton(
                 tooltip: 'Hapus langkah',
+                visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.close, size: 18),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
                 onPressed: _langkah.length > 1
                     ? () => setState(() {
                           _langkah.removeAt(i).dispose();
@@ -909,56 +931,50 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           TextField(
             controller: l.teks,
-            maxLines: 3,
-            decoration: InputDecoration(
-                hintText: 'Langkah ${i + 1}...'),
+            maxLines: null,
+            minLines: 3,
+            decoration: _dekorasiKotak('Tulis langkah memasaknya...'),
           ),
           const SizedBox(height: 10),
           Row(
             children: [
               const Icon(Icons.timer_outlined,
-                  size: 16, color: AppColors.secondary),
+                  size: 18, color: AppColors.primary),
               const SizedBox(width: 6),
-              const Text('Waktu:',
+              const Text('Durasi',
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.secondary)),
-              const SizedBox(width: 6),
+                      color: AppColors.chocolate)),
+              const Spacer(),
               SizedBox(
-                width: 56,
+                width: 52,
+                height: 40,
                 child: TextField(
                   controller: l.menit,
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
                   onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                      hintText: '0',
-                      isDense: true,
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 6, vertical: 10)),
+                  decoration: _dekorasiAngka('0'),
                 ),
               ),
               const SizedBox(width: 4),
               const Text('mnt',
                   style: TextStyle(
                       fontSize: 11, color: AppColors.chocolateMuted)),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               SizedBox(
-                width: 56,
+                width: 52,
+                height: 40,
                 child: TextField(
                   controller: l.detik,
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
                   onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                      hintText: '0',
-                      isDense: true,
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 6, vertical: 10)),
+                  decoration: _dekorasiAngka('0'),
                 ),
               ),
               const SizedBox(width: 4),
@@ -974,72 +990,105 @@ class _AddRecipeScreenState extends State<AddRecipeScreen>
     );
   }
 
+  /// Kotak angka ringkas: isi putih, sudut 12, tanpa border bawaan tema.
+  InputDecoration _dekorasiAngka(String hint) => InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(
+            fontSize: 13, color: AppColors.chocolateMuted),
+        isDense: true,
+        filled: true,
+        fillColor: AppColors.sand,
+        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      );
+
+  /// Area teks panjang: sudut 14 (bukan pill) supaya tidak terlihat aneh.
+  InputDecoration _dekorasiKotak(String hint) => InputDecoration(
+        hintText: hint,
+        isDense: true,
+        filled: true,
+        fillColor: AppColors.sand,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+      );
+
   Widget _fotoLangkah(_LangkahForm l) {
-    return Row(
-      children: [
-        for (var f = 0; f < l.foto.length; f++)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: SizedBox(
-                    width: 56,
-                    height: 56,
-                    child: l.foto[f].bytes != null
-                        ? Image.memory(l.foto[f].bytes!, fit: BoxFit.cover)
-                        : AppImage(
-                            url: l.foto[f].url ?? '',
-                            fallbackLetter: 'F',
-                          ),
-                  ),
-                ),
-                Positioned(
-                  top: -6,
-                  right: -6,
-                  child: GestureDetector(
-                    onTap: () => setState(() => l.foto.removeAt(f)),
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
-                        color: AppColors.chocolate,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.close,
-                          size: 12, color: Colors.white),
+    return SizedBox(
+      height: 56,
+      child: Row(
+        children: [
+          for (var f = 0; f < l.foto.length; f++)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      width: 56,
+                      height: 56,
+                      child: l.foto[f].bytes != null
+                          ? Image.memory(l.foto[f].bytes!, fit: BoxFit.cover)
+                          : AppImage(
+                              url: l.foto[f].url ?? '',
+                              fallbackLetter: 'F',
+                            ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        if (l.foto.length < 3)
-          GestureDetector(
-            onTap: _saving ? null : () => _pilihFotoLangkah(l),
-            child: Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: AppColors.sand,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.add_a_photo_outlined,
-                      size: 16, color: AppColors.chocolate),
-                  const SizedBox(width: 6),
-                  Text('Foto (${l.foto.length}/3)',
-                      style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.chocolate)),
+                  Positioned(
+                    top: -6,
+                    right: -6,
+                    child: GestureDetector(
+                      onTap: () => setState(() => l.foto.removeAt(f)),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: AppColors.chocolate,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close,
+                            size: 12, color: Colors.white),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-      ],
+          if (l.foto.length < 3)
+            Expanded(
+              child: GestureDetector(
+                onTap: _saving ? null : () => _pilihFotoLangkah(l),
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.sand,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.add_a_photo_outlined,
+                          size: 16, color: AppColors.chocolate),
+                      const SizedBox(width: 6),
+                      Text('Foto proses (${l.foto.length}/3)',
+                          style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.chocolate)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

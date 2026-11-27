@@ -19,7 +19,7 @@ void main() {
     expect(find.text('Gambar Bawaan Resep'), findsOneWidget);
 
     // Bahan punya pilihan satuan & langkah punya isian durasi (di bawah).
-    await t.dragUntilVisible(find.text('Waktu:'), find.byType(ListView),
+    await t.dragUntilVisible(find.text('Durasi'), find.byType(ListView),
         const Offset(0, -300));
     expect(find.byType(DropdownButton<String>), findsWidgets);
   });

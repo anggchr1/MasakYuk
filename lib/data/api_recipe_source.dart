@@ -271,6 +271,9 @@ class ApiRecipeSource {
       ratingRata: double.tryParse(
           (j['rating_rata'] ?? '').toString()),
       jumlahPenilai: _toInt(j['jumlah_penilai']) ?? 0,
+      ownerName: ((j['pemilik'] as Map?)?['nama_tampil'])?.toString(),
+      ownerPhotoUrl:
+          (((j['pemilik'] as Map?)?['foto'] as Map?)?['url'])?.toString(),
     );
   }
 
