@@ -50,9 +50,9 @@ class ApiRecipeSource {
   /// POST /api/v1/resep — tersimpan sebagai draf.
   Future<Recipe> create({
     required String judul,
-    required String kategori,
-    required List<String> bahan,
-    required List<String> langkah,
+    required List<String> kategoriNama,
+    required List<RecipeIngredient> bahan,
+    required List<RecipeStep> langkah,
     String deskripsi = '',
     int? porsi,
     int? waktuMasak,
@@ -63,7 +63,7 @@ class ApiRecipeSource {
       '/api/v1/resep',
       body: await _body(
         judul: judul,
-        kategori: kategori,
+        kategoriNama: kategoriNama,
         bahan: bahan,
         langkah: langkah,
         deskripsi: deskripsi,
@@ -80,9 +80,9 @@ class ApiRecipeSource {
   Future<Recipe> update(
     String id, {
     required String judul,
-    required String kategori,
-    required List<String> bahan,
-    required List<String> langkah,
+    required List<String> kategoriNama,
+    required List<RecipeIngredient> bahan,
+    required List<RecipeStep> langkah,
     String deskripsi = '',
     int? porsi,
     int? waktuMasak,
@@ -93,7 +93,7 @@ class ApiRecipeSource {
       '/api/v1/resep/$id',
       body: await _body(
         judul: judul,
-        kategori: kategori,
+        kategoriNama: kategoriNama,
         bahan: bahan,
         langkah: langkah,
         deskripsi: deskripsi,
@@ -120,16 +120,35 @@ class ApiRecipeSource {
 
   Future<Map<String, dynamic>> _body({
     required String judul,
-    required String kategori,
-    required List<String> bahan,
-    required List<String> langkah,
+    required List<String> kategoriNama,
+    required List<RecipeIngredient> bahan,
+    required List<RecipeStep> langkah,
     required String deskripsi,
     required int? porsi,
     required int? waktuMasak,
     required int? hargaResep,
     int? gambarUtamaId,
   }) async {
-    final kategoriId = await _kategoriId(kategori);
+    final daftar = await (_kategori ??= _muatKategori());
+    final idKategori = <int>[];
+    final kategoriBaru = <String>[];
+    for (final nama in kategoriNama) {
+      final cari = nama.trim().toLowerCase();
+      if (cari.isEmpty) continue;
+      Map<String, dynamic>? ada;
+      for (final k in daftar) {
+        if (k['nama'].toString().toLowerCase() == cari) {
+          ada = k;
+          break;
+        }
+      }
+      if (ada == null) {
+        kategoriBaru.add(nama.trim());
+      } else {
+        idKategori.add((ada['id'] as num).toInt());
+      }
+    }
+
     return {
       'judul': judul,
       if (deskripsi.isNotEmpty) 'deskripsi': deskripsi,
@@ -137,69 +156,34 @@ class ApiRecipeSource {
       'waktu_masak': ?waktuMasak,
       'harga_resep': ?hargaResep,
       'gambar_utama_id': ?gambarUtamaId,
-      if (kategoriId != null) 'kategori_ids': [kategoriId],
-      'bahan': bahan.map(bahanPayload).toList(),
-      'langkah': langkah.map((s) => {'instruksi': s}).toList(),
+      if (idKategori.isNotEmpty) 'kategori_ids': idKategori,
+      if (kategoriBaru.isNotEmpty) 'kategori_namas': kategoriBaru,
+      'bahan': bahan
+          .map((b) => {
+                'nama': b.nama,
+                if (b.jumlah.isNotEmpty) 'jumlah': b.jumlah,
+                if (b.satuan.isNotEmpty) 'satuan': b.satuan,
+                if (b.grup.isNotEmpty) 'grup': b.grup,
+              })
+          .toList(),
+      'langkah': langkah
+          .map((l) => {
+                'instruksi': l.instruksi,
+                'durasi_menit': l.durasiMenit,
+                'durasi_detik': l.durasiDetik,
+                for (var i = 0; i < l.gambarIds.length && i < 3; i++)
+                  'gambar_id_${i + 1}': l.gambarIds[i],
+              })
+          .toList(),
     };
   }
 
   // Daftar kategori cukup diambil sekali per sesi.
   Future<List<Map<String, dynamic>>>? _kategori;
 
-  Future<int?> _kategoriId(String nama) async {
-    final daftar = await (_kategori ??= _muatKategori());
-    final n = nama.toLowerCase();
-    for (final k in daftar) {
-      if (k['nama'].toString().toLowerCase() == n) {
-        return (k['id'] as num).toInt();
-      }
-    }
-    return null;
-  }
-
   Future<List<Map<String, dynamic>>> _muatKategori() async {
     final data = await api.get('/api/v1/kategori-resep');
     return ((data as List?) ?? const []).cast<Map<String, dynamic>>();
-  }
-
-  /// "2 siung bawang putih" -> {jumlah: 2, satuan: 'siung', nama: 'bawang putih'}
-  Map<String, dynamic> bahanPayload(String teks) {
-    final kata = teks.trim().split(RegExp(r'\s+'));
-    num? jumlah;
-    var satuan = '';
-    var i = 0;
-    if (kata.isNotEmpty) {
-      jumlah = _nilai(kata.first);
-      if (jumlah != null) i = 1;
-    }
-    if (i < kata.length && _satuan.contains(kata[i].toLowerCase())) {
-      satuan = kata[i];
-      i++;
-    }
-    final nama = kata.skip(i).join(' ').trim();
-    return {
-      'nama': nama.isEmpty ? teks.trim() : nama,
-      'jumlah': ?jumlah,
-      if (satuan.isNotEmpty) 'satuan': satuan,
-    };
-  }
-
-  static const _satuan = {
-    'gr', 'gram', 'kg', 'ml', 'l', 'liter', 'ons', 'sdm', 'sdt',
-    'sendok', 'siung', 'butir', 'buah', 'batang', 'lembar', 'papan',
-    'ruas', 'ekor', 'potong', 'bungkus', 'sachet', 'kaleng', 'piring',
-    'mangkok', 'gelas', 'ikat', 'biji',
-  };
-
-  /// "2" -> 2, "0,5" -> 0.5, "1/2" -> 0.5
-  num? _nilai(String s) {
-    final p = s.split('/');
-    if (p.length == 2) {
-      final a = num.tryParse(p[0]);
-      final b = num.tryParse(p[1]);
-      return (a == null || b == null || b == 0) ? null : a / b;
-    }
-    return num.tryParse(s.replaceAll(',', '.'));
   }
 
   Recipe toRecipe(Map<String, dynamic> j, {bool mine = false}) {
@@ -219,6 +203,33 @@ class ApiRecipeSource {
         .where((s) => s.isNotEmpty)
         .toList();
 
+    final bahanDetail = bahan
+        .map((b) => RecipeIngredient(
+              nama: ((b['bahan'] as Map?)?['nama'] ?? '').toString(),
+              jumlah: _angka(b['jumlah']),
+              satuan: (b['satuan'] ?? '').toString(),
+              grup: (b['grup'] ?? '').toString(),
+            ))
+        .where((b) => b.nama.isNotEmpty)
+        .toList();
+
+    final langkahDetail = langkah.map((l) {
+      final foto = [l['gambar'], l['gambar2'], l['gambar3']]
+          .whereType<Map>()
+          .toList();
+      return RecipeStep(
+        instruksi: (l['instruksi'] ?? '').toString(),
+        durasiMenit: _toInt(l['durasi_menit']) ?? 0,
+        durasiDetik: _toInt(l['durasi_detik']) ?? 0,
+        gambarIds:
+            foto.map((g) => _toInt(g['id'])).whereType<int>().toList(),
+        gambarUrls: foto
+            .map((g) => (g['url'] ?? '').toString())
+            .where((u) => u.isNotEmpty)
+            .toList(),
+      );
+    }).toList();
+
     final keywords = <String>{
       for (final n in namaBahan)
         ...n
@@ -233,9 +244,12 @@ class ApiRecipeSource {
       category:
           kategori.isEmpty ? 'Lainnya' : kategori.first['nama'].toString(),
       tags: kategori.map((k) => k['slug'].toString()).toList(),
-      ingredientsRaw: bahan.map(_bahanText).toList(),
+      kategoriNama: kategori.map((k) => k['nama'].toString()).toList(),
+      ingredientsRaw: bahanDetail.map((b) => b.teks).toList(),
       ingredientsKeywords: keywords,
       stepsList: langkah.map((l) => (l['instruksi'] ?? '').toString()).toList(),
+      bahanDetail: bahanDetail,
+      langkahDetail: langkahDetail,
       calories: null,
       proteins: null,
       fat: null,
@@ -263,13 +277,6 @@ class ApiRecipeSource {
   /// Terima angka atau string dari API (decimal Laravel = string).
   int? _toInt(dynamic v) =>
       v == null ? null : num.tryParse(v.toString())?.toInt();
-
-  String _bahanText(Map<String, dynamic> b) {
-    final qty = _angka(b['jumlah']);
-    final satuan = (b['satuan'] ?? '').toString();
-    final nama = ((b['bahan'] as Map?)?['nama'] ?? '').toString();
-    return [qty, satuan, nama].where((s) => s.isNotEmpty).join(' ');
-  }
 
   /// "500.00" -> "500", "0.50" -> "0.5"
   String _angka(dynamic v) {

@@ -708,24 +708,24 @@ class RecipeRepository extends ChangeNotifier {
   /// Simpan resep baru ke akun yang login; terbitkan bila [publish].
   Future<void> addCustom({
     required String title,
-    required String category,
-    required List<String> ingredients,
-    required List<String> steps,
+    required List<String> kategori,
+    required List<RecipeIngredient> bahan,
+    required List<RecipeStep> langkah,
     required bool publish,
     String description = '',
-    String? durationText,
-    String? servings,
+    int? porsi,
+    int? waktuMasak,
     int? estCostManual,
     int? gambarUtamaId,
   }) async {
     var r = await _apiResep.create(
       judul: title,
-      kategori: category,
-      bahan: ingredients,
-      langkah: steps,
+      kategoriNama: kategori,
+      bahan: bahan,
+      langkah: langkah,
       deskripsi: description,
-      porsi: _angkaAwal(servings),
-      waktuMasak: _angkaAwal(durationText),
+      porsi: porsi,
+      waktuMasak: waktuMasak,
       hargaResep: estCostManual,
       gambarUtamaId: gambarUtamaId,
     );
@@ -738,25 +738,25 @@ class RecipeRepository extends ChangeNotifier {
   Future<void> updateCustom(
     String docId, {
     required String title,
-    required String category,
-    required List<String> ingredients,
-    required List<String> steps,
+    required List<String> kategori,
+    required List<RecipeIngredient> bahan,
+    required List<RecipeStep> langkah,
     required bool publish,
     String description = '',
-    String? durationText,
-    String? servings,
+    int? porsi,
+    int? waktuMasak,
     int? estCostManual,
     int? gambarUtamaId,
   }) async {
     var r = await _apiResep.update(
       docId,
       judul: title,
-      kategori: category,
-      bahan: ingredients,
-      langkah: steps,
+      kategoriNama: kategori,
+      bahan: bahan,
+      langkah: langkah,
       deskripsi: description,
-      porsi: _angkaAwal(servings),
-      waktuMasak: _angkaAwal(durationText),
+      porsi: porsi,
+      waktuMasak: waktuMasak,
       hargaResep: estCostManual,
       gambarUtamaId: gambarUtamaId,
     );
@@ -795,10 +795,6 @@ class RecipeRepository extends ChangeNotifier {
     notifyListeners();
     unawaited(_simpanCacheMilikku());
   }
-
-  /// "35 mnt" / "4 orang" -> 35 / 4
-  int? _angkaAwal(String? s) =>
-      s == null ? null : int.tryParse(RegExp(r'\d+').stringMatch(s) ?? '');
 
   void logout() {
     _custom.clear();

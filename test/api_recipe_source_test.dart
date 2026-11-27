@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:masakyuk/core/api/api_client.dart';
 import 'package:masakyuk/data/api_recipe_source.dart';
 import 'package:masakyuk/data/recipe_photo.dart';
+import 'package:masakyuk/models/recipe.dart';
 
 void main() {
   test('fetchAll mengirim page & kategori ke API', () async {
@@ -130,15 +133,96 @@ void main() {
     expect(r.loves, 1);
   });
 
-  test('bahanPayload memecah jumlah & satuan', () {
-    final api = ApiRecipeSource();
-    expect(api.bahanPayload('2 siung bawang putih'),
-        {'nama': 'bawang putih', 'jumlah': 2, 'satuan': 'siung'});
-    expect(api.bahanPayload('500 gram ayam fillet'),
-        {'nama': 'ayam fillet', 'jumlah': 500, 'satuan': 'gram'});
-    expect(api.bahanPayload('garam secukupnya'),
-        {'nama': 'garam secukupnya'});
-    expect(api.bahanPayload('1/2 sdt merica'),
-        {'nama': 'merica', 'jumlah': 0.5, 'satuan': 'sdt'});
+  test('toRecipe membaca grup bahan, durasi, dan foto langkah', () {
+    final r = ApiRecipeSource().toRecipe({
+      'id': 3,
+      'judul': 'Sop Ayam',
+      'bahan_resep': [
+        {
+          'jumlah': '2',
+          'satuan': 'sdm',
+          'grup': 'Bumbu',
+          'bahan': {'nama': 'kecap'},
+        },
+      ],
+      'langkah_resep': [
+        {
+          'nomor_langkah': 1,
+          'instruksi': 'Rebus',
+          'durasi_menit': 5,
+          'durasi_detik': 30,
+          'gambar': {'id': 11, 'url': 'https://contoh.test/1.jpg'},
+          'gambar2': {'id': 12, 'url': 'https://contoh.test/2.jpg'},
+        },
+      ],
+    });
+
+    expect(r.bahanDetail.single.grup, 'Bumbu');
+    expect(r.ingredientsRaw.single, '2 sdm kecap');
+    expect(r.langkahDetail.single.totalDetik, 330);
+    expect(r.langkahDetail.single.durasiLabel, '5 mnt 30 dtk');
+    expect(r.langkahDetail.single.gambarIds, [11, 12]);
+  });
+
+  test('create mengirim takaran, grup, durasi, foto, dan tag baru', () async {
+    late Map<String, dynamic> body;
+    final api = ApiClient(
+      baseUrl: 'https://contoh.test',
+      client: MockClient((req) async {
+        if (req.url.path.endsWith('/kategori-resep')) {
+          return http.Response(
+            jsonEncode([
+              {'id': 1, 'nama': 'Pedas', 'slug': 'pedas'},
+            ]),
+            200,
+          );
+        }
+        body = jsonDecode(req.body) as Map<String, dynamic>;
+        return http.Response(
+          jsonEncode({
+            'id': 9,
+            'judul': 'Sambal',
+            'bahan_resep': [],
+            'langkah_resep': [],
+            'kategori_resep': [],
+          }),
+          201,
+        );
+      }),
+    );
+
+    await ApiRecipeSource(api).create(
+      judul: 'Sambal',
+      kategoriNama: ['Pedas', 'Masakan Sunda'],
+      bahan: const [
+        RecipeIngredient(
+          nama: 'bawang',
+          jumlah: '1/2',
+          satuan: 'sdt',
+          grup: 'Bumbu',
+        ),
+      ],
+      langkah: const [
+        RecipeStep(
+          instruksi: 'Haluskan',
+          durasiMenit: 2,
+          durasiDetik: 30,
+          gambarIds: [7],
+        ),
+      ],
+    );
+
+    expect(body['kategori_ids'], [1]);
+    expect(body['kategori_namas'], ['Masakan Sunda']);
+    expect((body['bahan'] as List).first, {
+      'nama': 'bawang',
+      'jumlah': '1/2',
+      'satuan': 'sdt',
+      'grup': 'Bumbu',
+    });
+    final langkah = (body['langkah'] as List).first as Map;
+    expect(langkah['durasi_menit'], 2);
+    expect(langkah['durasi_detik'], 30);
+    expect(langkah['gambar_id_1'], 7);
   });
 }

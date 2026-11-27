@@ -43,8 +43,7 @@ class _CookingScreenState extends State<CookingScreen>
     _controller.forward();
     _cp = CookingProvider(widget.recipe.stepsList.length);
     if (widget.recipe.stepsList.isNotEmpty) {
-      _cp.retarget(CookingProvider.secsFor(
-          widget.recipe.stepsList.first));
+      _cp.retarget(_targetDetik(0));
     }
   }
 
@@ -61,8 +60,19 @@ class _CookingScreenState extends State<CookingScreen>
     return '${words.take(8).join(' ')}...';
   }
 
-  int _mins(String s) =>
-      (CookingProvider.secsFor(s) / 60).round().clamp(1, 60);
+  int _mins(int s) => (s / 60).round().clamp(1, 60);
+
+  /// Durasi asli dari form (bila ada); resep lama pakai perkiraan jumlah kata.
+  int _targetDetik(int i) {
+    final d = widget.recipe.langkahDetail;
+    if (i >= 0 && i < d.length && d[i].totalDetik > 0) {
+      return d[i].totalDetik;
+    }
+    if (i >= 0 && i < widget.recipe.stepsList.length) {
+      return CookingProvider.secsFor(widget.recipe.stepsList[i]);
+    }
+    return 180;
+  }
 
   /// Nama tahap ala desain (Marinasi/Goreng/...) dari kata kunci langkah.
   String _stage(String s) {
@@ -112,9 +122,9 @@ class _CookingScreenState extends State<CookingScreen>
     }).take(6).toList();
   }
 
-  void _nav(void Function() go, String step) {
+  void _nav(void Function() go, int target) {
     go();
-    _cp.retarget(CookingProvider.secsFor(step));
+    _cp.retarget(_targetDetik(target));
   }
 
   @override
@@ -225,7 +235,7 @@ class _CookingScreenState extends State<CookingScreen>
                                 size: 14, color: Colors.white),
                             const SizedBox(width: 4),
                             Text(
-                              'Estimasi: ${_mins(step)} Menit',
+                              'Estimasi: ${_mins(_targetDetik(_cp.index))} Menit',
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -496,7 +506,7 @@ class _CookingScreenState extends State<CookingScreen>
                         child: GestureDetector(
                           onTap: () => _nav(
                               () => _cp.jumpTo(e.key),
-                              e.value),
+                              e.key),
                           child: Container(
                             padding:
                                 const EdgeInsets.symmetric(
@@ -584,7 +594,7 @@ class _CookingScreenState extends State<CookingScreen>
                       onPressed: _cp.index == 0
                           ? null
                           : () => _nav(_cp.prev,
-                              steps[_cp.index - 1]),
+                              _cp.index - 1),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -595,7 +605,7 @@ class _CookingScreenState extends State<CookingScreen>
                         onPressed: _cp.isLast
                             ? () => _finish(context)
                             : () => _nav(_cp.next,
-                                steps[_cp.index + 1]),
+                                _cp.index + 1),
                         child: Text(_cp.isLast
                             ? 'Selesaikan'
                             : 'Lanjut ke Langkah ${_cp.index + 2} →'),
@@ -739,8 +749,7 @@ class _CookingScreenState extends State<CookingScreen>
   }
 
   void _resetStepTimer() {
-    _cp.retarget(
-        CookingProvider.secsFor(widget.recipe.stepsList[_cp.index]));
+    _cp.retarget(_targetDetik(_cp.index));
   }
 
   /// Dialog selesai ala Stitch (icon kit): ikon + judul + desc

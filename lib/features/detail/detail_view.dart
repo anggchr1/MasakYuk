@@ -370,27 +370,7 @@ class _DetailScreenState extends State<DetailScreen>
                                   BorderRadius.circular(32),
                             ),
                             child: Column(
-                              children: [
-                                ...r.ingredientsRaw
-                                    .asMap()
-                                    .entries
-                                    .map(
-                                  (e2) {
-                                    final checked = _dp
-                                        .checked
-                                        .contains(e2.key);
-                                    return Padding(
-                                      padding: const EdgeInsets
-                                          .only(bottom: 10),
-                                      child: _bahanRow(
-                                          e2.value,
-                                          checked,
-                                          () => _dp.toggle(
-                                              e2.key)),
-                                    );
-                                  },
-                                ),
-                              ],
+                              children: _bahanWidgets(r),
                             ),
                           ),
                         const SizedBox(height: 12),
@@ -403,7 +383,7 @@ class _DetailScreenState extends State<DetailScreen>
                                     color: AppColors.chocolate)),
                             const SizedBox(width: 8),
                             Text(
-                              '(${r.stepsList.length} langkah)',
+                              '(${_langkahList(r).length} langkah)',
                               style: const TextStyle(
                                   fontSize: 14,
                                   color: AppColors.chocolateMuted),
@@ -441,7 +421,7 @@ class _DetailScreenState extends State<DetailScreen>
                             child: Column(
                               children: [
                                 for (final s
-                                    in r.stepsList.asMap().entries)
+                                    in _langkahList(r).asMap().entries)
                                   Padding(
                                     padding: const EdgeInsets.only(
                                         bottom: 10),
@@ -471,12 +451,91 @@ class _DetailScreenState extends State<DetailScreen>
                                         ),
                                         const SizedBox(width: 10),
                                         Expanded(
-                                          child: Text(s.value,
-                                              style: const TextStyle(
-                                                  fontSize: 13,
-                                                  height: 19.5 / 13,
-                                                  color: AppColors
-                                                      .chocolate)),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(s.value.instruksi,
+                                                  style: const TextStyle(
+                                                      fontSize: 13,
+                                                      height: 19.5 / 13,
+                                                      color: AppColors
+                                                          .chocolate)),
+                                              if (s.value.durasiLabel
+                                                  .isNotEmpty)
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets
+                                                          .only(top: 4),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      const Icon(
+                                                          Icons
+                                                              .timer_outlined,
+                                                          size: 12,
+                                                          color: AppColors
+                                                              .chocolateMuted),
+                                                      const SizedBox(
+                                                          width: 3),
+                                                      Text(
+                                                          s.value
+                                                              .durasiLabel,
+                                                          style: const TextStyle(
+                                                              fontSize: 11,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              color: AppColors
+                                                                  .chocolateMuted)),
+                                                    ],
+                                                  ),
+                                                ),
+                                              if (s.value
+                                                  .gambarUrls.isNotEmpty)
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets
+                                                          .only(top: 6),
+                                                  child: SizedBox(
+                                                    height: 64,
+                                                    child: ListView
+                                                        .separated(
+                                                      scrollDirection:
+                                                          Axis.horizontal,
+                                                      itemCount: s.value
+                                                          .gambarUrls
+                                                          .length,
+                                                      separatorBuilder:
+                                                          (_, _) =>
+                                                              const SizedBox(
+                                                                  width: 6),
+                                                      itemBuilder:
+                                                          (_, gi) =>
+                                                              ClipRRect(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(
+                                                                    10),
+                                                        child: SizedBox(
+                                                          width: 64,
+                                                          height: 64,
+                                                          child: AppImage(
+                                                            url: s
+                                                                    .value
+                                                                    .gambarUrls[
+                                                                gi],
+                                                            fallbackLetter:
+                                                                'L',
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -688,6 +747,52 @@ class _DetailScreenState extends State<DetailScreen>
         ],
       ),
     );
+  }
+
+  /// Daftar langkah dengan durasi & foto (fallback ke teks lama).
+  List<RecipeStep> _langkahList(Recipe r) {
+    if (r.langkahDetail.isNotEmpty) return r.langkahDetail;
+    return r.stepsList.map((t) => RecipeStep(instruksi: t)).toList();
+  }
+
+  /// Baris bahan + judul grup dari form web/app.
+  List<Widget> _bahanWidgets(Recipe r) {
+    final detail = r.bahanDetail;
+    if (detail.isEmpty) {
+      return r.ingredientsRaw.asMap().entries.map((e) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _bahanRow(
+              e.value, _dp.checked.contains(e.key), () => _dp.toggle(e.key)),
+        );
+      }).toList();
+    }
+
+    final out = <Widget>[];
+    String? grupAktif;
+    for (var i = 0; i < detail.length; i++) {
+      final b = detail[i];
+      if (b.grup.isNotEmpty && b.grup != grupAktif) {
+        grupAktif = b.grup;
+        out.add(Padding(
+          padding: EdgeInsets.only(top: out.isEmpty ? 0 : 6, bottom: 6),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(b.grup,
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                    color: AppColors.chocolateMuted)),
+          ),
+        ));
+      }
+      out.add(Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: _bahanRow(b.teks, _dp.checked.contains(i), () => _dp.toggle(i)),
+      ));
+    }
+    return out;
   }
 
   /// Baris bahan ala Figma: pil putih + checkbox 22px + badge "Siap".
