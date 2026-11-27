@@ -296,18 +296,34 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                     ),
                     if (widget.repo.unreadCount > 0)
                       Positioned(
-                        right: 10,
-                        top: 10,
+                        right: -2,
+                        top: -2,
                         child: Container(
-                          width: 10,
-                          height: 10,
+                          constraints: const BoxConstraints(
+                              minWidth: 18, minHeight: 18),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4),
                           decoration: BoxDecoration(
                             color: AppColors.amber,
-                            shape: BoxShape.circle,
+                            borderRadius:
+                                BorderRadius.circular(9999),
                             border: Border.all(
                                 color:
                                     const Color(0xFF7F2500),
                                 width: 2),
+                          ),
+                          child: Center(
+                            child: Text(
+                                widget.repo.unreadCount > 9
+                                    ? '9+'
+                                    : '${widget.repo.unreadCount}',
+                                style: const TextStyle(
+                                    fontSize: 9,
+                                    height: 1.1,
+                                    fontWeight:
+                                        FontWeight.w800,
+                                    color:
+                                        Color(0xFF7F2500))),
                           ),
                         ),
                       ),

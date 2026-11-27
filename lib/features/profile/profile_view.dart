@@ -141,6 +141,59 @@ class _ProfileScreenState extends State<ProfileScreen>
                       fontSize: 12,
                       letterSpacing: 0.3)),
               const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          NotificationsScreen(repo: widget.repo)),
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    CircleAvatar(
+                      backgroundColor:
+                          Colors.white.withValues(alpha: 0.1),
+                      child: const Icon(Icons.notifications_outlined,
+                          color: Colors.white, size: 20),
+                    ),
+                    if (widget.repo.unreadCount > 0)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                              minWidth: 18, minHeight: 18),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.amber,
+                            borderRadius:
+                                BorderRadius.circular(9999),
+                            border: Border.all(
+                                color:
+                                    const Color(0xFF7F2500),
+                                width: 2),
+                          ),
+                          child: Center(
+                            child: Text(
+                                widget.repo.unreadCount > 9
+                                    ? '9+'
+                                    : '${widget.repo.unreadCount}',
+                                style: const TextStyle(
+                                    fontSize: 9,
+                                    height: 1.1,
+                                    fontWeight:
+                                        FontWeight.w800,
+                                    color:
+                                        Color(0xFF7F2500))),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
               CircleAvatar(
                 backgroundColor: Colors.white
                     .withValues(alpha: 0.1),

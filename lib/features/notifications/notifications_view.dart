@@ -48,6 +48,7 @@ class _NotificationsScreenState
       case 'komentar':
         return const Color(0xFF7F2500);
       case 'rating':
+      case 'penilaian':
         return AppColors.secondary;
       default:
         return AppColors.amber;
@@ -59,6 +60,7 @@ class _NotificationsScreenState
       case 'komentar':
         return Icons.chat_bubble_outline;
       case 'rating':
+      case 'penilaian':
         return Icons.star_border;
       default:
         return Icons.lightbulb_outline;
@@ -70,6 +72,7 @@ class _NotificationsScreenState
       case 'komentar':
         return 'Lihat Komentar';
       case 'rating':
+      case 'penilaian':
         return 'Buka Resep';
       default:
         return 'Buka';
@@ -389,32 +392,41 @@ class _NotificationsScreenState
                   ),
                   child: Row(
                     children: [
-                      Text(
-                          timeago.format(n.at,
-                              locale: 'id'),
-                          style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
-                              color: AppColors
-                                  .chocolateMuted)),
-                      const Spacer(),
+                      Expanded(
+                        child: Text(
+                            timeago.format(n.at,
+                                locale: 'id'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.5,
+                                color: AppColors
+                                    .chocolateMuted)),
+                      ),
+                      const SizedBox(width: 8),
                       GestureDetector(
                         onTap: () => _open(n),
                         child: Row(
                           mainAxisSize:
                               MainAxisSize.min,
                           children: [
-                            Text(_action(n.kind),
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight:
-                                        FontWeight.w700,
-                                    color: n.read
-                                        ? AppColors
-                                            .chocolateMuted
-                                        : const Color(
-                                            0xFF7F2500))),
+                            Flexible(
+                              child: Text(_action(n.kind),
+                                  maxLines: 1,
+                                  overflow:
+                                      TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight:
+                                          FontWeight.w700,
+                                      color: n.read
+                                          ? AppColors
+                                              .chocolateMuted
+                                          : const Color(
+                                              0xFF7F2500))),
+                            ),
                             const SizedBox(width: 4),
                             Icon(Icons.arrow_forward,
                                 size: 12,

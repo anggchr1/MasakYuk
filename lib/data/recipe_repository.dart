@@ -519,6 +519,22 @@ class RecipeRepository extends ChangeNotifier {
   // ---------- Notifikasi in-app ----------
   int get unreadCount => notifs.where((n) => !n.read).length;
 
+  Timer? _pantauNotif;
+
+  /// Segarkan notifikasi tiap 45 detik selama login, supaya komentar baru
+  /// muncul tanpa push FCM (server mungkin belum punya kredensial Firebase).
+  void mulaiPantauNotifikasi() {
+    _pantauNotif?.cancel();
+    if (api.token == null) return;
+    _pantauNotif = Timer.periodic(const Duration(seconds: 45), (_) {
+      if (api.token == null) {
+        _pantauNotif?.cancel();
+        return;
+      }
+      muatNotifikasi();
+    });
+  }
+
   /// Ambil notifikasi komentar dari server (butuh login).
   Future<void> muatNotifikasi() async {
     if (api.token == null) {
@@ -797,6 +813,8 @@ class RecipeRepository extends ChangeNotifier {
   }
 
   void logout() {
+    _pantauNotif?.cancel();
+    _pantauNotif = null;
     _custom.clear();
     _favorites.clear();
     notifs.clear();

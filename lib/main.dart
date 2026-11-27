@@ -71,6 +71,7 @@ class _MasakYukAppState extends State<MasakYukApp> {
         _repo.muatResepMilikku();
         _repo.muatFavorit();
         _repo.muatNotifikasi();
+        _repo.mulaiPantauNotifikasi();
         PushService.daftarkan(_repo);
       }
     });

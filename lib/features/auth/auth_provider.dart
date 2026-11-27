@@ -228,6 +228,7 @@ class AuthProvider extends ChangeNotifier {
     await repo.muatResepMilikku();
     await repo.muatFavorit();
     await repo.muatNotifikasi();
+    repo.mulaiPantauNotifikasi();
     await PushService.daftarkan(repo);
   }
 

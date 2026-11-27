@@ -29,4 +29,18 @@ void main() {
     expect(n.read, isTrue);
     expect(n.desc, isEmpty);
   });
+
+  test('notifikasi penilaian ikut terbaca dan dihitung belum dibaca', () {
+    final n = NotifItem.dariServer({
+      'id': 8,
+      'jenis': 'penilaian',
+      'judul': 'Penilaian Baru pada Resep Anda',
+      'tipe_terkait': 'resep',
+      'id_terkait': 3,
+    });
+
+    expect(n.kind, 'penilaian');
+    expect(n.read, isFalse);
+    expect(n.recipeId, '3');
+  });
 }
