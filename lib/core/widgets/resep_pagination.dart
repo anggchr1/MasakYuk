@@ -8,6 +8,8 @@ class ResepPagination extends StatelessWidget {
   final bool memuat;
   final bool habis;
   final VoidCallback onMuatLagi;
+  /// Kata benda yang dihitung, mis. 'resep' atau 'bahan'.
+  final String kata;
   const ResepPagination({
     super.key,
     required this.tampil,
@@ -15,6 +17,7 @@ class ResepPagination extends StatelessWidget {
     required this.memuat,
     required this.habis,
     required this.onMuatLagi,
+    this.kata = 'resep',
   });
 
   @override
@@ -24,7 +27,7 @@ class ResepPagination extends StatelessWidget {
       children: [
         const SizedBox(height: 4),
         Text(
-          '1–$tampil dari $total resep',
+          '1–$tampil dari $total $kata',
           textAlign: TextAlign.center,
           style: const TextStyle(
               fontSize: 12, color: AppColors.chocolateMuted),
@@ -49,12 +52,12 @@ class ResepPagination extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Text('Memuat resep…'),
+                      Text('Memuat $kata…'),
                     ],
                   )
                 : Text(habis
-                    ? 'Semua resep sudah tampil'
-                    : 'Lihat resep lagi'),
+                    ? 'Semua $kata sudah tampil'
+                    : 'Lihat $kata lagi'),
           ),
         ),
       ],

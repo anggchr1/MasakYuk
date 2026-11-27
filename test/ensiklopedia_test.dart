@@ -1,7 +1,25 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:masakyuk/data/recipe_repository.dart';
+import 'package:masakyuk/features/encyclopedia/encyclopedia_view.dart';
 import 'package:masakyuk/models/know.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  testWidgets('ensiklopedia tampil 24 entri dulu, sisanya lewat tombol',
+      (t) async {
+    SharedPreferences.setMockInitialValues({});
+    final repo = RecipeRepository();
+    await repo.load();
+    final total = repo.ensiklopedia.length;
+
+    await t.pumpWidget(MaterialApp(home: EncyclopediaScreen(repo: repo)));
+    await t.pumpAndSettle();
+
+    final awal = total < 24 ? total : 24;
+    expect(find.textContaining('1–$awal dari $total bahan'), findsOneWidget);
+    expect(find.text('Lihat bahan lagi'), findsOneWidget);
+  });
   test('entri ensiklopedia dari API dipetakan ke IngredientInfo', () {
     final e = IngredientInfo.dariServer({
       'tipe': 'masakan',

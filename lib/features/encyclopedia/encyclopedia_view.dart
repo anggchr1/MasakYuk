@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_image.dart';
 import '../../core/widgets/recipe_card.dart';
+import '../../core/widgets/resep_pagination.dart';
 import '../../data/money.dart';
 import '../../data/recipe_repository.dart';
 import '../../models/recipe.dart';
@@ -29,6 +30,11 @@ class _EncyclopediaScreenState
   String _kat = 'Semua';
   String _tab = 'Bahan';
   final _ctrl = TextEditingController();
+
+  /// Ensiklopedia dimuat sekali dari server; grid ditampilkan bertahap
+  /// supaya tidak membangun ratusan kartu sekaligus.
+  static const _perHalaman = 24;
+  int _tampilBahan = _perHalaman;
 
   @override
   void initState() {
@@ -127,8 +133,10 @@ class _EncyclopediaScreenState
                 const SizedBox(height: 16),
                 TextField(
                   controller: _ctrl,
-                  onChanged: (v) => setState(
-                      () => _q = v.toLowerCase().trim()),
+                  onChanged: (v) => setState(() {
+                        _q = v.toLowerCase().trim();
+                        _tampilBahan = _perHalaman;
+                      }),
                   decoration: InputDecoration(
                     hintText: _tab == 'Bahan'
                         ? 'Cari bahan atau rempah dapur...'
@@ -232,6 +240,7 @@ class _EncyclopediaScreenState
       return okQ && okK;
     }).toList()
       ..sort((a, b) => a.nama.compareTo(b.nama));
+    final tampil = items.take(_tampilBahan).toList();
     return [
       SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -253,8 +262,10 @@ class _EncyclopediaScreenState
                     fontSize: 12,
                     fontWeight: FontWeight.w600),
                 shape: const StadiumBorder(),
-                onSelected: (_) =>
-                    setState(() => _kat = k),
+                onSelected: (_) => setState(() {
+                      _kat = k;
+                      _tampilBahan = _perHalaman;
+                    }),
               ),
             );
           }).toList(),
@@ -284,9 +295,9 @@ class _EncyclopediaScreenState
           crossAxisSpacing: 12,
           childAspectRatio: 0.66,
         ),
-        itemCount: items.length,
+        itemCount: tampil.length,
         itemBuilder: (_, i) {
-          final e = items[i];
+          final e = tampil[i];
           return GestureDetector(
             onTap: () => Navigator.push(
               context,
@@ -426,6 +437,16 @@ class _EncyclopediaScreenState
             ),
           );
         },
+      ),
+      const SizedBox(height: 16),
+      ResepPagination(
+        tampil: tampil.length,
+        total: items.length,
+        memuat: false,
+        habis: tampil.length >= items.length,
+        kata: 'bahan',
+        onMuatLagi: () => setState(
+            () => _tampilBahan += _perHalaman),
       ),
       const SizedBox(height: 16),
       Container(

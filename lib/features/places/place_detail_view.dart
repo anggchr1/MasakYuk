@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_image.dart';
@@ -88,24 +88,6 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen>
                     children: [
                       _floatBtn(context, Icons.arrow_back,
                           () => Navigator.pop(context)),
-                      const Spacer(),
-                      _floatBtn(
-                          context,
-                          Icons.bookmark_border,
-                          () => ScaffoldMessenger.of(
-                                  context)
-                              .showSnackBar(const SnackBar(
-                                  content: Text(
-                                      'Bookmark tempat aktif di versi berikutnya.')))),
-                      const SizedBox(width: 8),
-                      _floatBtn(
-                          context,
-                          Icons.share_outlined,
-                          () => SharePlus.instance.share(
-                                ShareParams(
-                                    text:
-                                        '${widget.place.nama}\n${widget.place.alamat}\n\n— via MasakYuk'),
-                              )),
                     ],
                   ),
                 ),

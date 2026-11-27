@@ -123,54 +123,6 @@ class _ArticleScreenState extends State<ArticleScreen>
                                   AppColors.chocolate),
                         ),
                       ),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () => ScaffoldMessenger
-                                .of(context)
-                            .showSnackBar(const SnackBar(
-                                content: Text(
-                                    'Bookmark bahan aktif di versi berikutnya.'))),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white
-                                .withValues(alpha: 0.9),
-                            borderRadius:
-                                BorderRadius.circular(
-                                    9999),
-                          ),
-                          child: const Icon(
-                              Icons.bookmark_border,
-                              size: 20,
-                              color:
-                                  AppColors.chocolate),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () => ScaffoldMessenger
-                                .of(context)
-                            .showSnackBar(SnackBar(
-                                content: Text(
-                                    'Bagikan ${info.nama} — segera hadir.'))),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white
-                                .withValues(alpha: 0.9),
-                            borderRadius:
-                                BorderRadius.circular(
-                                    9999),
-                          ),
-                          child: const Icon(
-                              Icons.share_outlined,
-                              size: 20,
-                              color:
-                                  AppColors.chocolate),
-                        ),
-                      ),
                     ],
                   ),
                 ),
